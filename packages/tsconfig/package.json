@@ -1,0 +1,39 @@
+{
+  "name": "@coldsmirk/tsconfig",
+  "version": "0.1.0",
+  "description": "Opinionated TypeScript configs: strict, ESM-first. `/base` (bundler resolution), `/node` (nodenext), and `/react` (base + JSX + DOM).",
+  "keywords": [
+    "tsconfig",
+    "typescript",
+    "tsconfig-base"
+  ],
+  "homepage": "https://github.com/coldsmirk/canon/tree/main/packages/tsconfig#readme",
+  "bugs": "https://github.com/coldsmirk/canon/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coldsmirk/canon.git",
+    "directory": "packages/tsconfig"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Venus"
+  },
+  "type": "commonjs",
+  "exports": {
+    "./base": "./base.json",
+    "./node": "./node.json",
+    "./package.json": "./package.json",
+    "./react": "./react.json"
+  },
+  "files": [
+    "base.json",
+    "node.json",
+    "react.json"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
