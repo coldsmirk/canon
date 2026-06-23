@@ -1,0 +1,7 @@
+{
+  "extends": "@coldsmirk/tsconfig/base",
+  "compilerOptions": {
+    "types": ["node", "vitest/globals"],
+    "noEmit": true
+  }
+}
