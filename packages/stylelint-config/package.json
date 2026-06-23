@@ -1,0 +1,68 @@
+{
+  "name": "@coldsmirk/stylelint-config",
+  "version": "0.1.0",
+  "description": "Opinionated Stylelint config for CSS/SCSS: standard (or standard-scss via the scss option) + @stylistic, with recess property ordering.",
+  "keywords": [
+    "stylelint",
+    "stylelint-config",
+    "css",
+    "scss"
+  ],
+  "homepage": "https://github.com/coldsmirk/canon/tree/main/packages/stylelint-config#readme",
+  "bugs": "https://github.com/coldsmirk/canon/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coldsmirk/canon.git",
+    "directory": "packages/stylelint-config"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Venus"
+  },
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "clean": "rimraf dist",
+    "prepack": "tsdown",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@stylistic/stylelint-config": "^5.0.0",
+    "stylelint-config-recess-order": "^7.0.0",
+    "stylelint-config-standard": "^40.0.0",
+    "stylelint-config-standard-scss": "^17.0.0",
+    "stylelint-order": "^8.0.0"
+  },
+  "devDependencies": {
+    "stylelint": "^17.0.0"
+  },
+  "peerDependencies": {
+    "stylelint": "^17.0.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
