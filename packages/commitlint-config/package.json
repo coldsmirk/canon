@@ -1,0 +1,58 @@
+{
+  "name": "@coldsmirk/commitlint-config",
+  "version": "0.1.0",
+  "description": "Opinionated commitlint config: Conventional Commits, enforced single-line (no body, no footer).",
+  "keywords": [
+    "commitlint",
+    "commitlint-config",
+    "conventional-commits"
+  ],
+  "homepage": "https://github.com/coldsmirk/canon/tree/main/packages/commitlint-config#readme",
+  "bugs": "https://github.com/coldsmirk/canon/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coldsmirk/canon.git",
+    "directory": "packages/commitlint-config"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Venus"
+  },
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "clean": "rimraf dist",
+    "prepack": "tsdown",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@commitlint/config-conventional": "^21.0.2",
+    "@commitlint/types": "^21.0.1"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
