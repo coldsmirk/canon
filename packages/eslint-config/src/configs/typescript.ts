@@ -6,6 +6,10 @@ import tslint from "typescript-eslint";
 
 import { GLOB_SRC } from "../globs";
 
+// Shared by the naming-convention snake_case allowance and its requiresQuotes exemption below, so the
+// property scope cannot drift between the two entries.
+const PROPERTY_SELECTORS = ["objectLiteralProperty", "typeProperty", "classProperty"];
+
 // Rules: https://typescript-eslint.io/rules/
 // The non-type-checked `strict` + `stylistic` tier (no projectService): the whole no-unsafe-*
 // family is deliberately OFF, matching the source repos. Type-aware rules are out of scope.
@@ -70,7 +74,7 @@ const typescriptRules: Linter.RulesRecord = {
     // Property keys often mirror external contracts (wire snake_case, React component identities) —
     // allow the three real-world formats; UPPER_CASE is intentionally excluded (use file-scope consts).
     {
-      selector: ["objectLiteralProperty", "typeProperty", "classProperty"],
+      selector: PROPERTY_SELECTORS,
       format: ["camelCase", "PascalCase", "snake_case"],
       leadingUnderscore: "forbid",
       trailingUnderscore: "forbid"
@@ -83,7 +87,7 @@ const typescriptRules: Linter.RulesRecord = {
     },
     // Keys that genuinely require quotes ("Content-Type", "X-API-Key") are wire literals, not identifiers.
     {
-      selector: ["objectLiteralProperty", "typeProperty", "classProperty"],
+      selector: PROPERTY_SELECTORS,
       format: null,
       modifiers: ["requiresQuotes"]
     }
