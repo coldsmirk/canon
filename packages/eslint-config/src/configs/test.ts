@@ -24,6 +24,12 @@ export function test(): Linter.Config[] {
     flattenConfig("coldsmirk/test", GLOB_TEST, [
       { ...jestDom.configs["flat/recommended"], plugins: { "jest-dom": fixupPluginRules(jestDom) } },
       testingLibrary.configs["flat/react"]
-    ])
+    ], {
+      // Off: no-node-access forbids .closest() / .querySelector() / .parentElement, but component-
+      // library tests legitimately need them — internal structure (antd/antd-mobile classes, data
+      // containers) carries no semantic role/label, so getByRole etc. can't reach it. Same "too strict
+      // for component-library tests" category as the disabled @eslint-react/static-components.
+      rules: { "testing-library/no-node-access": "off" }
+    })
   ];
 }
