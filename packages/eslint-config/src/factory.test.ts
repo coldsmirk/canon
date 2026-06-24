@@ -92,10 +92,23 @@ describe("defineEslintConfig factory", () => {
       const config = await resolveConfig(defineEslintConfig({ react: true }), "widget.test.tsx");
       const ruleNames = Object.keys(config.rules ?? {});
 
-      // Regression guard: spreading both flat configs into one object would let testing-library
-      // clobber every jest-dom rule. Emitting two scoped blocks keeps both alive.
+      // Regression guard: both presets merge into ONE block (coldsmirk/test) via flattenConfig;
+      // their namespaces are disjoint (jest-dom/* vs testing-library/*), so neither clobbers the other.
       expect(ruleNames.some(r => r.startsWith("jest-dom/"))).toBe(true);
       expect(ruleNames.some(r => r.startsWith("testing-library/"))).toBe(true);
+    });
+
+    it("runs jest-dom rules on ESLint 10 without crashing (5.5.0 calls the removed getSourceCode; @eslint/compat fixup polyfills it)", async () => {
+      const eslint = new ESLint({
+        cwd: import.meta.dirname,
+        overrideConfigFile: true,
+        overrideConfig: defineEslintConfig({ react: true }) as never,
+        fix: true
+      });
+      // `toHaveAttribute("class", ...)` reaches prefer-to-have-class, whose fixer calls context.getSourceCode().
+      const [result] = await eslint.lintText("test(\"x\", () => { expect(el).toHaveAttribute(\"class\", \"a\"); });\n", { filePath: "widget.test.tsx" });
+
+      expect(result?.messages.filter(m => m.fatal)).toHaveLength(0);
     });
 
     it("uses the .test convention, not .spec", async () => {
