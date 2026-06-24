@@ -1,6 +1,6 @@
 {
   "name": "@coldsmirk/tsconfig",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Opinionated TypeScript configs: strict, ESM-first. `/base` (bundler resolution), `/node` (nodenext), and `/react` (base + JSX + DOM).",
   "keywords": [
     "tsconfig",
