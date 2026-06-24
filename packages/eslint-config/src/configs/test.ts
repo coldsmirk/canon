@@ -25,11 +25,19 @@ export function test(): Linter.Config[] {
       { ...jestDom.configs["flat/recommended"], plugins: { "jest-dom": fixupPluginRules(jestDom) } },
       testingLibrary.configs["flat/react"]
     ], {
-      // Off: no-node-access forbids .closest() / .querySelector() / .parentElement, but component-
-      // library tests legitimately need them — internal structure (antd/antd-mobile classes, data
-      // containers) carries no semantic role/label, so getByRole etc. can't reach it. Same "too strict
-      // for component-library tests" category as the disabled @eslint-react/static-components.
-      rules: { "testing-library/no-node-access": "off" }
+      // These testing-library rules assume plain react-testing-library app tests and are too strict for
+      // component-library / wrapped-render testing — the same "rule's ideal doesn't fit this scenario"
+      // category as the disabled @eslint-react/static-components:
+      // - no-node-access / no-container forbid .closest() / .querySelector() / container methods, but a
+      //   component library's internal structure (antd/antd-mobile classes, data containers) carries no
+      //   semantic role/label, so getByRole etc. can't reach it — direct DOM access is the only way in.
+      // - render-result-naming-convention enforces RTL's render-return naming, which misfires on custom
+      //   render wrappers (renderWithProviders, …).
+      rules: {
+        "testing-library/no-container": "off",
+        "testing-library/no-node-access": "off",
+        "testing-library/render-result-naming-convention": "off"
+      }
     })
   ];
 }

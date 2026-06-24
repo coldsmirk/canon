@@ -111,10 +111,12 @@ describe("defineEslintConfig factory", () => {
       expect(result?.messages.filter(m => m.fatal)).toHaveLength(0);
     });
 
-    it("turns off testing-library/no-node-access (too strict for component-library tests)", async () => {
+    it("turns off testing-library rules too strict for component-library / wrapped-render tests", async () => {
       const config = await resolveConfig(defineEslintConfig({ react: true }), "widget.test.tsx");
 
       expect(config.rules?.["testing-library/no-node-access"]?.[0]).toBe(0);
+      expect(config.rules?.["testing-library/no-container"]?.[0]).toBe(0);
+      expect(config.rules?.["testing-library/render-result-naming-convention"]?.[0]).toBe(0);
     });
 
     it("uses the .test convention, not .spec", async () => {
