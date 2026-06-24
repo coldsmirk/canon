@@ -1,6 +1,6 @@
 {
   "name": "@coldsmirk/stylelint-config",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Opinionated Stylelint config for CSS/SCSS: standard (or standard-scss via the scss option) + @stylistic, with recess property ordering.",
   "keywords": [
     "stylelint",
