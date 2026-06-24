@@ -63,6 +63,30 @@ You can still inspect exactly what applies to a file with:
 npx eslint --inspect-config
 ```
 
+## Extending with project-specific rules
+
+"Sealed" means canon's **built-in** rules aren't reconfigurable — it does **not** mean the config is a dead end. The factory returns a plain `Linter.Config[]`, so you append your own flat-config block(s) after it. That trailing block is the right home for **project-specific** rules — ones that encode your own framework or domain conventions (a custom local plugin, an extra `no-restricted-syntax` selector) and so don't belong in a shared config:
+
+```ts
+import { defineEslintConfig } from "@coldsmirk/eslint-config";
+import { defineConfig } from "eslint/config";
+
+import { localPlugin } from "./tools/eslint-local-rules";
+
+export default defineConfig(
+  ...defineEslintConfig({ react: true }),
+  {
+    files: ["**/*.{ts,tsx}"],
+    plugins: { local: localPlugin },
+    rules: { "local/no-legacy-size-token": "error" }
+  }
+);
+```
+
+Flat config is last-wins, so a trailing block *can* also relax a canon rule for your project — reach for that sparingly; the value of a sealed baseline is that every file gets the same one.
+
+> **One sharp edge — `no-restricted-syntax`.** Flat config **replaces** a rule's options wholesale; it does not merge them. canon packs several selectors into one `no-restricted-syntax` (the `React.*` ban, string-ref ban, const-enum ban, JSX-outside-`.tsx`). A project block that sets its own `no-restricted-syntax` therefore **overrides canon's entirely** — carry canon's selectors forward, or express your restriction as a separate named rule / plugin instead.
+
 ## What it enforces (highlights)
 
 - **Formatting** (`@stylistic`, no Prettier for code): 2-space indent, double quotes, semicolons, 1tbs braces, no trailing commas, arrow-parens as-needed, LF line endings.
@@ -70,7 +94,7 @@ npx eslint --inspect-config
 - **Filenames**: kebab-case (`unicorn/filename-case`); `README.md` / `AGENTS.md` / `CLAUDE.md` exempt.
 - **Dead code**: core and `@typescript-eslint` `no-unused-vars` are off and delegated to `unused-imports/no-unused-vars`; a leading `_` marks an intentionally-unused arg/var.
 - **package.json / tsconfig**: keys sorted; package.json validated (and, for `type: "lib"`, held to publishable requirements).
-- **React** (when enabled): named imports only (no `React.*`), no class components, no `forwardRef`/`createRef`/`Context.Provider`, JSX confined to `.tsx`, leak-free Web APIs, `rules-of-hooks` + `exhaustive-deps`.
+- **React** (when enabled): named imports only (no `React.*`), no class components, no `forwardRef`/`createRef`/`Context.Provider`, JSX confined to `.tsx`, leak-free Web APIs, `rules-of-hooks` + `exhaustive-deps`, and canon's own autofixable JSX shorthands (`disabled` over `disabled={true}`, `<>` over a propless `<Fragment>`).
 
 ## License
 

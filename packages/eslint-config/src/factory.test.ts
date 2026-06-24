@@ -40,6 +40,7 @@ describe("defineEslintConfig factory", () => {
 
       expect(config.rules?.["@eslint-react/no-class-component"]).toBeUndefined();
       expect(config.rules?.["react-hooks/rules-of-hooks"]).toBeUndefined();
+      expect(config.rules?.["coldsmirk/jsx-shorthand-boolean"]).toBeUndefined();
     });
 
     it("bans const enums but not React.* (no React selectors in the base)", async () => {
@@ -76,6 +77,13 @@ describe("defineEslintConfig factory", () => {
 
       expect(config.rules?.["@eslint-react/jsx-no-useless-fragment"]).toMatchObject([2, { allowExpressions: true }]);
       expect(config.rules?.["@eslint-react/no-missing-context-display-name"]?.[0]).toBe(2);
+    });
+
+    it("enables canon's own autofixable JSX shorthand rules", async () => {
+      const config = await resolveConfig(defineEslintConfig({ react: true }), "widget.tsx");
+
+      expect(config.rules?.["coldsmirk/jsx-shorthand-boolean"]?.[0]).toBe(2);
+      expect(config.rules?.["coldsmirk/jsx-shorthand-fragment"]?.[0]).toBe(2);
     });
   });
 

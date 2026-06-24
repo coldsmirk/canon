@@ -8,6 +8,7 @@ import reactWebApi from "eslint-plugin-react-web-api";
 import { defineConfig } from "eslint/config";
 
 import { GLOB_SRC, GLOB_SRC_NO_TSX } from "../globs";
+import { coldsmirkPlugin } from "../rules";
 
 // React APIs/types must be named imports; the React.* namespace and string refs are banned, and JSX
 // is confined to `.tsx`. These selectors extend the framework-agnostic `no-restricted-syntax` set in
@@ -47,6 +48,9 @@ const noTsxRestrictedSyntax: Linter.RuleEntry = [
 
 // Rules: https://eslint-react.xyz/docs/rules/overview
 const reactRules: Linter.RulesRecord = {
+  // canon's own autofixable JSX shorthands (see ../rules) — not shipped by @stylistic or @eslint-react.
+  "coldsmirk/jsx-shorthand-boolean": "error",
+  "coldsmirk/jsx-shorthand-fragment": "error",
   "react-dom/no-dangerously-set-innerhtml": "error",
   "react-dom/no-dangerously-set-innerhtml-with-children": "error",
   "react-dom/no-find-dom-node": "error",
@@ -160,6 +164,7 @@ export function react(): Linter.Config[] {
         reactHooks.configs.flat.recommended
       ],
       plugins: {
+        coldsmirk: coldsmirkPlugin,
         "react-dom": reactDom,
         "react-naming-convention": reactNamingConvention,
         "react-web-api": reactWebApi
