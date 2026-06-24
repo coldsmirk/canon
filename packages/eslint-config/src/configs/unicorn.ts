@@ -9,6 +9,9 @@ import { flattenConfig } from "../utils";
 // Domain-specific carve-outs (e.g. `no-thenable` for a Polars-style when/then API) are NOT here —
 // they belong in a consumer's trailing override, not the shared baseline.
 const unicornRules: Linter.RulesRecord = {
+  // Off: assumes every `.children` is a DOM collection, so it false-positives on non-DOM `.children`
+  // (React children, schema / AST node trees). High noise in React and tree-shaped data.
+  "unicorn/better-dom-traversing": "off",
   "unicorn/consistent-empty-array-spread": "error",
   "unicorn/error-message": "error",
   "unicorn/escape-case": "error",
@@ -60,6 +63,10 @@ const unicornRules: Linter.RulesRecord = {
   "unicorn/prefer-dom-node-text-content": "error",
   "unicorn/prefer-event-target": "off",
   "unicorn/prefer-includes": "error",
+  // Off: its autofix rewrites `a === x || a === y || a === z` to `[x, y, z].includes(a)`, which loses
+  // discriminated-union narrowing — `eslint --fix` then emits code that fails typecheck. An autofix
+  // must not introduce type errors.
+  "unicorn/prefer-includes-over-repeated-comparisons": "off",
   "unicorn/prefer-logical-operator-over-ternary": "error",
   "unicorn/prefer-node-protocol": "error",
   "unicorn/prefer-number-properties": "error",

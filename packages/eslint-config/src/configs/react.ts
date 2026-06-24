@@ -68,6 +68,9 @@ const reactRules: Linter.RulesRecord = {
   "react-dom/no-use-form-state": "error",
   "react-dom/no-void-elements-with-children": "error",
   "@eslint-react/set-state-in-effect": "off",
+  // Off: false-positives on stable components obtained from hooks/context (e.g. TanStack Form's
+  // `<form.Field>` / `<Subscribe>` via useFormContext) — it can't tell them from inline definitions.
+  "@eslint-react/static-components": "off",
   "@eslint-react/jsx-no-key-after-spread": "error",
   "@eslint-react/jsx-no-comment-textnodes": "error",
   "@eslint-react/jsx-no-useless-fragment": ["error", { allowExpressions: true }],

@@ -23,6 +23,71 @@ const typescriptRules: Linter.RulesRecord = {
   ],
   "@typescript-eslint/max-params": ["error", { max: 5 }],
   "@typescript-eslint/method-signature-style": ["error", "property"],
+  // Replaces core `camelcase` (off in the javascript layer) with TS-aware naming. Crucially,
+  // object/type/class properties may be snake_case (external/wire-format keys like `module_or_path`),
+  // and quote-requiring keys ("Content-Type") are exempt — so snake_case API shapes don't dead-lock
+  // against `@stylistic/quote-props`. Syntactic (no type info needed), so it fits this non-type-checked tier.
+  "@typescript-eslint/naming-convention": [
+    "error",
+    {
+      selector: "default",
+      format: ["camelCase"],
+      leadingUnderscore: "forbid",
+      trailingUnderscore: "forbid"
+    },
+    {
+      selector: "variable",
+      format: ["camelCase", "UPPER_CASE", "PascalCase"],
+      leadingUnderscore: "forbid",
+      trailingUnderscore: "forbid"
+    },
+    {
+      selector: "function",
+      format: ["camelCase", "PascalCase"],
+      leadingUnderscore: "forbid",
+      trailingUnderscore: "forbid"
+    },
+    // Parameters may lead with `_` (intentionally-unused) and be PascalCase (component refs in HOCs).
+    {
+      selector: "parameter",
+      format: ["camelCase", "PascalCase"],
+      leadingUnderscore: "allow",
+      trailingUnderscore: "forbid"
+    },
+    {
+      selector: "typeLike",
+      format: ["PascalCase"],
+      leadingUnderscore: "forbid",
+      trailingUnderscore: "forbid"
+    },
+    {
+      selector: "enumMember",
+      format: ["PascalCase"],
+      leadingUnderscore: "forbid",
+      trailingUnderscore: "forbid"
+    },
+    { selector: "import", format: null },
+    // Property keys often mirror external contracts (wire snake_case, React component identities) —
+    // allow the three real-world formats; UPPER_CASE is intentionally excluded (use file-scope consts).
+    {
+      selector: ["objectLiteralProperty", "typeProperty", "classProperty"],
+      format: ["camelCase", "PascalCase", "snake_case"],
+      leadingUnderscore: "forbid",
+      trailingUnderscore: "forbid"
+    },
+    {
+      selector: ["objectLiteralMethod", "typeMethod", "classMethod"],
+      format: ["camelCase", "PascalCase"],
+      leadingUnderscore: "forbid",
+      trailingUnderscore: "forbid"
+    },
+    // Keys that genuinely require quotes ("Content-Type", "X-API-Key") are wire literals, not identifiers.
+    {
+      selector: ["objectLiteralProperty", "typeProperty", "classProperty"],
+      format: null,
+      modifiers: ["requiresQuotes"]
+    }
+  ],
   "@typescript-eslint/no-dynamic-delete": "off",
   "@typescript-eslint/no-empty-object-type": ["error", { allowInterfaces: "always" }],
   "@typescript-eslint/no-explicit-any": "off",

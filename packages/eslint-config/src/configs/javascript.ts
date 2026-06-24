@@ -12,7 +12,10 @@ const javascriptRules: Linter.RulesRecord = {
   "array-callback-return": ["error", { allowImplicit: true }],
   "arrow-body-style": ["error", "as-needed", { requireReturnForObjectLiteral: true }],
   "block-scoped-var": "error",
-  camelcase: ["error", { ignoreGlobals: true, properties: "always" }],
+  // Off: delegated to `@typescript-eslint/naming-convention` (typescript layer), which understands TS
+  // contexts core camelcase can't — letting external-API snake_case keys through instead of
+  // dead-locking against `@stylistic/quote-props` (unquoted → camelcase error; quoted → needless-quotes).
+  camelcase: "off",
   curly: ["error", "all"],
   "default-case-last": "error",
   "default-param-last": "error",

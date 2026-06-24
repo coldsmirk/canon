@@ -244,4 +244,28 @@ describe("defineEslintConfig factory", () => {
       expect(config.rules?.["@stylistic/jsx-child-element-spacing"]?.[0]).toBe(2);
     });
   });
+
+  describe("real-world feedback fixes", () => {
+    it("turns off rules whose autofix/heuristics misfire (prefer-includes-over-repeated-comparisons, better-dom-traversing)", async () => {
+      const config = await resolveConfig(defineEslintConfig(), "example.ts");
+
+      expect(config.rules?.["unicorn/prefer-includes-over-repeated-comparisons"]?.[0]).toBe(0);
+      expect(config.rules?.["unicorn/better-dom-traversing"]?.[0]).toBe(0);
+    });
+
+    it("delegates naming from core camelcase (off) to TS-aware naming-convention allowing snake_case props", async () => {
+      const config = await resolveConfig(defineEslintConfig(), "example.ts");
+
+      expect(config.rules?.camelcase?.[0]).toBe(0);
+      expect(config.rules?.["@typescript-eslint/naming-convention"]?.[0]).toBe(2);
+      // snake_case must stay legal on object/type/class properties (external/wire-format keys).
+      expect(JSON.stringify(config.rules?.["@typescript-eslint/naming-convention"])).toContain("snake_case");
+    });
+
+    it("turns off @eslint-react/static-components (false-positives on hook/context-stable components)", async () => {
+      const config = await resolveConfig(defineEslintConfig({ react: true }), "widget.tsx");
+
+      expect(config.rules?.["@eslint-react/static-components"]?.[0]).toBe(0);
+    });
+  });
 });
