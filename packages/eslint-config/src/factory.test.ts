@@ -180,6 +180,24 @@ describe("defineEslintConfig factory", () => {
     });
   });
 
+  describe("user configs (project layer)", () => {
+    it("appends trailing flat configs after the canon baseline", () => {
+      const projectLayer: Linter.Config = { name: "project/local", rules: { "no-console": "error" } };
+      const baseline = defineEslintConfig({ react: true });
+      const composed = defineEslintConfig({ react: true }, projectLayer);
+
+      expect(composed).toHaveLength(baseline.length + 1);
+      expect(composed.at(-1)).toBe(projectLayer);
+    });
+
+    it("lets a trailing config override a canon rule for the project (last-wins)", async () => {
+      const configs = defineEslintConfig({}, { rules: { "unicorn/error-message": "off" } });
+      const config = await resolveConfig(configs, "example.ts");
+
+      expect(config.rules?.["unicorn/error-message"]?.[0]).toBe(0);
+    });
+  });
+
   describe("adopted rule expansions", () => {
     it("enables the new core correctness rules on source", async () => {
       const config = await resolveConfig(defineEslintConfig(), "example.ts");

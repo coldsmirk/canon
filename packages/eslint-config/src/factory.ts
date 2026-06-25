@@ -28,15 +28,24 @@ import {
  * configurable: this is a sealed, take-it-or-leave-it config. The React and test plugins are bundled,
  * so a React project needs no extra installs — just set `react: true`.
  *
+ * Extra flat configs passed after `options` are appended to the result, so a consumer gets a ready-to-
+ * export config without wrapping it in another `defineConfig()` — this is the project-layer extension
+ * point (purely additive; the sealed baseline is unchanged).
+ *
  * @example
  * ```ts
- * export default defineEslintConfig();                              // private TS app (lenient package.json)
- * export default defineEslintConfig({ type: "lib" });               // published TS library (strict package.json)
- * export default defineEslintConfig({ react: true });               // React app
- * export default defineEslintConfig({ type: "lib", react: true });  // React library
+ * export default defineEslintConfig();                  // private TS app (lenient package.json)
+ * export default defineEslintConfig({ type: "lib" });   // published TS library (strict package.json)
+ * export default defineEslintConfig({ react: true });   // React app
+ *
+ * // React app + project-specific layers, no outer defineConfig() needed:
+ * export default defineEslintConfig({ react: true }, ...tanstackConfig, projectLayer);
  * ```
  */
-export function defineEslintConfig(options: EslintConfigOptions = {}): Linter.Config[] {
+export function defineEslintConfig(
+  options: EslintConfigOptions = {},
+  ...userConfigs: Linter.Config[]
+): Linter.Config[] {
   const {
     type = "app",
     react: enableReact = false,
@@ -70,5 +79,8 @@ export function defineEslintConfig(options: EslintConfigOptions = {}): Linter.Co
     layers.push(react(), test());
   }
 
-  return layers.flat();
+  // Project configs are appended AFTER canon's layers (flat config is last-wins), so a consumer can add
+  // its own plugins/rules — and, where it must, override a canon rule for its own files — without an
+  // outer defineConfig() wrap. The sealed baseline stays intact; the project layer is purely additive.
+  return [...layers.flat(), ...userConfigs];
 }

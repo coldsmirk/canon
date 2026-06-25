@@ -28,7 +28,7 @@ export default defineEslintConfig();
 export default defineEslintConfig({ react: true });
 ```
 
-The factory returns a plain `Linter.Config[]` — `export default` it directly.
+The factory returns a plain `Linter.Config[]` — `export default` it directly. To add project-specific layers, pass them as extra arguments after the options (no outer `defineConfig()` needed) — see [Extending](#extending-with-project-specific-rules).
 
 ## Options
 
@@ -55,7 +55,7 @@ export default defineEslintConfig({ type: "lib" }); // strict package.json for a
 
 ## Sealed by design
 
-This is a highly opinionated config: **rules are not configurable.** There is no rule-override argument, no per-feature `overrides`, and no composer — the factory just returns the array you export as-is. The only knobs are `type`, `react`, and `ignores` (file scoping — for files outside `.gitignore` such as committed generated output or vendored code). If a built-in rule doesn't fit, that's a change to make in this package, not a local override.
+This is a highly opinionated config: **the built-in rules are not configurable.** There is no rule-override option and no per-feature `overrides` — the only option knobs are `type`, `react`, and `ignores` (file scoping, for files outside `.gitignore` such as committed generated output or vendored code). If a built-in rule doesn't fit, that's a change to make in this package. You *can* still append your own project-layer configs after the options (see [Extending](#extending-with-project-specific-rules)) — that's purely additive and leaves the sealed baseline intact.
 
 You can still inspect exactly what applies to a file with:
 
@@ -65,16 +65,15 @@ npx eslint --inspect-config
 
 ## Extending with project-specific rules
 
-"Sealed" means canon's **built-in** rules aren't reconfigurable — it does **not** mean the config is a dead end. The factory returns a plain `Linter.Config[]`, so you append your own flat-config block(s) after it. That trailing block is the right home for **project-specific** rules — ones that encode your own framework or domain conventions (a custom local plugin, an extra `no-restricted-syntax` selector) and so don't belong in a shared config:
+"Sealed" means canon's **built-in** rules aren't reconfigurable — it does **not** mean the config is a dead end. Pass extra flat configs **after the options** and the factory appends them, so you get a ready-to-export result with no outer `defineConfig()`. Those trailing blocks are the right home for **project-specific** rules — ones that encode your own framework or domain conventions (a custom local plugin, an extra `no-restricted-syntax` selector) and so don't belong in a shared config:
 
 ```ts
 import { defineEslintConfig } from "@coldsmirk/eslint-config";
-import { defineConfig } from "eslint/config";
 
 import { localPlugin } from "./tools/eslint-local-rules";
 
-export default defineConfig(
-  ...defineEslintConfig({ react: true }),
+export default defineEslintConfig(
+  { react: true },
   {
     files: ["**/*.{ts,tsx}"],
     plugins: { local: localPlugin },
