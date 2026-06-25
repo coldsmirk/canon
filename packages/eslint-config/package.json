@@ -1,6 +1,6 @@
 {
   "name": "@coldsmirk/eslint-config",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Opinionated, sealed ESLint flat config for pure-TypeScript and React projects.",
   "keywords": [
     "eslint",

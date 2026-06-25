@@ -1,6 +1,6 @@
 {
   "name": "@coldsmirk/commitlint-config",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Opinionated commitlint config: Conventional Commits, enforced single-line (no body, no footer).",
   "keywords": [
     "commitlint",
