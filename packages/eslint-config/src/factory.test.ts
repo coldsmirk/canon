@@ -398,6 +398,41 @@ describe("defineEslintConfig factory", () => {
     });
   });
 
+  describe("unicorn v70 curation", () => {
+    it("migrates the renamed rules: no-for-each on, name-replacements off, no stale ids", async () => {
+      const config = await resolveConfig(defineEslintConfig(), "example.ts");
+
+      expect(config.rules?.["unicorn/no-for-each"]?.[0]).toBe(2);
+      // Renamed from prevent-abbreviations AND newly in recommended — the off must follow the name.
+      expect(config.rules?.["unicorn/name-replacements"]?.[0]).toBe(0);
+      // The pre-v70 ids must not appear at all: configuring a deleted rule crashes every consumer.
+      expect(config.rules?.["unicorn/no-array-for-each"]).toBeUndefined();
+    });
+
+    it("keeps exactly one source per core-twin rule (core on, unicorn twin off)", async () => {
+      const config = await resolveConfig(defineEslintConfig(), "example.ts");
+
+      expect(config.rules?.["no-useless-concat"]?.[0]).toBe(2);
+      expect(config.rules?.["unicorn/no-useless-concat"]?.[0]).toBe(0);
+      expect(config.rules?.["operator-assignment"]?.[0]).toBe(2);
+      expect(config.rules?.["unicorn/operator-assignment"]?.[0]).toBe(0);
+    });
+
+    it("turns off the v70 additions that misfire on legitimate idioms", async () => {
+      const config = await resolveConfig(defineEslintConfig(), "example.ts");
+
+      // Probed: flags `.catch(() => undefined)` fire-and-forget and all promise chaining, no autofix.
+      expect(config.rules?.["unicorn/prefer-await"]?.[0]).toBe(0);
+      // Probed: demands is/has prefixes on local booleans (`loading`, `disabled`, …), no autofix.
+      expect(config.rules?.["unicorn/consistent-boolean-name"]?.[0]).toBe(0);
+      // Probed: flags the module-level lazy-cache pattern (`let cache; f() { cache ??= … }`).
+      expect(config.rules?.["unicorn/no-top-level-assignment-in-function"]?.[0]).toBe(0);
+      // Syntax-level version can't ignore string arrays (the type-aware twin defaults to that),
+      // so it taxes the most common, correct sort with boilerplate comparators.
+      expect(config.rules?.["unicorn/require-array-sort-compare"]?.[0]).toBe(0);
+    });
+  });
+
   // Counterpart of the stylelint package's "real stylelint load" suite: rule options are only
   // validated when a rule actually executes, so resolveConfig alone can't catch an invalid option
   // or a plugin/ESLint incompatibility. Lint real text through every layer via lintFatals and

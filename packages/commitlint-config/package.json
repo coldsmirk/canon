@@ -46,8 +46,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@commitlint/config-conventional": "^21.0.2",
-    "@commitlint/types": "^21.0.1"
+    "@commitlint/config-conventional": "^21.2.0",
+    "@commitlint/types": "^21.2.0"
   },
   "engines": {
     "node": ">=22"

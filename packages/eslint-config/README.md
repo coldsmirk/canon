@@ -12,7 +12,7 @@ It lints TS/JS source (all eight extensions: `.ts`/`.tsx`/`.mts`/`.cts`/`.js`/`.
 pnpm add -D eslint @coldsmirk/eslint-config
 ```
 
-Requires ESLint **>= 10** and Node **>= 22**. The React and test plugins are **bundled** — a React project just sets `react: true`; no extra installs, no peer-dependency warnings. Only `eslint` itself is a peer.
+Requires ESLint **>= 10.4** (eslint-plugin-unicorn v70's floor) and Node **>= 22**. The React and test plugins are **bundled** — a React project just sets `react: true`; no extra installs, no peer-dependency warnings. Only `eslint` itself is a peer.
 
 ## Usage
 
