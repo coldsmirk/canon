@@ -16,6 +16,19 @@ function resolveConfig(configs: Linter.Config[], file: string) {
   return eslint.calculateConfigForFile(file);
 }
 
+// Lint real text through the full config and return only the fatal (parse/crash/invalid-option)
+// messages — the smoke suite below asserts these are empty; ordinary rule findings are fine.
+async function lintFatals(configs: Linter.Config[], filePath: string, code: string) {
+  const eslint = new ESLint({
+    cwd: import.meta.dirname,
+    overrideConfigFile: true,
+    overrideConfig: configs as never
+  });
+  const [result] = await eslint.lintText(code, { filePath });
+
+  return result?.messages.filter(m => m.fatal) ?? [];
+}
+
 describe("defineEslintConfig factory", () => {
   it("emits stably-named config blocks", () => {
     const names = defineEslintConfig().map(c => c.name).filter(Boolean);
@@ -376,6 +389,41 @@ describe("defineEslintConfig factory", () => {
       const config = await resolveConfig(defineEslintConfig({ react: true }), "widget.tsx");
 
       expect(config.rules?.["@eslint-react/static-components"]?.[0]).toBe(0);
+    });
+  });
+
+  // Counterpart of the stylelint package's "real stylelint load" suite: rule options are only
+  // validated when a rule actually executes, so resolveConfig alone can't catch an invalid option
+  // or a plugin/ESLint incompatibility. Lint real text through every layer via lintFatals and
+  // require zero fatal messages.
+  describe("full-config smoke (real lint run)", () => {
+    it("lints TS source, a test file, and a .cjs file with no fatals (react: false)", async () => {
+      const configs = defineEslintConfig();
+
+      expect(await lintFatals(configs, "example.ts", "export function add(a: number, b: number): number {\n  return a + b;\n}\n")).toEqual([]);
+      expect(await lintFatals(configs, "example.test.ts", "it(\"adds\", () => {\n  expect(1 + 1).toBe(2);\n});\n")).toEqual([]);
+      expect(await lintFatals(configs, "example.cjs", "module.exports = { sep: require(\"node:path\").sep };\n")).toEqual([]);
+    });
+
+    it("lints a component and its test with no fatals (react: true)", async () => {
+      const configs = defineEslintConfig({ react: true });
+      const component = "export function Badge({ label }: { label: string }) {\n  return <span>{label}</span>;\n}\n";
+      const test = "import { Badge } from \"./badge\";\n\nit(\"renders\", () => {\n  expect(<Badge label=\"x\" />).toBeDefined();\n});\n";
+
+      expect(await lintFatals(configs, "badge.tsx", component)).toEqual([]);
+      expect(await lintFatals(configs, "badge.test.tsx", test)).toEqual([]);
+    });
+
+    it("reports no no-undef / no-require-imports on an idiomatic .cjs config file", async () => {
+      const eslint = new ESLint({
+        cwd: import.meta.dirname,
+        overrideConfigFile: true,
+        overrideConfig: defineEslintConfig() as never
+      });
+      const [result] = await eslint.lintText("const { join } = require(\"node:path\");\n\nmodule.exports = { root: join(__dirname, \"src\") };\n", { filePath: "postcss.config.cjs" });
+      const misfires = (result?.messages ?? []).filter(m => m.ruleId === "no-undef" || m.ruleId === "@typescript-eslint/no-require-imports");
+
+      expect(misfires).toEqual([]);
     });
   });
 });
