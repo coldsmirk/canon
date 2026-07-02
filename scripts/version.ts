@@ -33,7 +33,8 @@ const next = nextVersion(current, bump);
 const writes = manifests.map(path => {
   return {
     path,
-    contents: readFileSync(path, "utf-8").replace(/"version":\s*"[^"]+"/, `"version": "${next}"`)
+    // Replacer as a function: a plain-string replacement would interpret `$`-sequences in it.
+    contents: readFileSync(path, "utf-8").replace(/"version":\s*"[^"]+"/, () => `"version": "${next}"`)
   };
 });
 
