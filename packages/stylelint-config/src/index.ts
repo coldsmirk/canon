@@ -152,7 +152,7 @@ export function defineStylelintConfig(options: StylelintConfigOptions = {}): Con
       ...valueRules,
       ...cssHygieneRules,
       ...stylisticRules,
-      ...scss ? scssRules : {}
+      ...scss && scssRules
     }
   };
 }
