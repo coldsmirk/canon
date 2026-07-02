@@ -16,7 +16,10 @@ export interface StylelintConfigOptions {
 // Rule Definitions
 // ============================================================================
 
-const ALLOWED_UNITS = ["px", "em", "rem", "%", "vw", "vh", "fr", "deg", "rad", "grad", "turn", "ms", "s"];
+// Includes `ch` (monospace/typographic sizing) and the full viewport family — classic (vw/vh/
+// vmin/vmax) plus the dynamic/small/large variants (dv*/sv*/lv*), which are the correct answer to
+// mobile browser chrome and must not force a disable comment in a sealed config.
+const ALLOWED_UNITS = ["px", "em", "rem", "ch", "%", "vw", "vh", "vmin", "vmax", "dvw", "dvh", "svw", "svh", "lvw", "lvh", "fr", "deg", "rad", "grad", "turn", "ms", "s"];
 
 // Recess property ordering, with no blank lines inserted between groups.
 const orderRules: Config["rules"] = {

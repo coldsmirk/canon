@@ -47,7 +47,7 @@ defineStylelintConfig({
 
 - **Property order**: recess ordering (`stylelint-order`), no blank lines between groups.
 - **Colors**: lowercase, long hex, no `alpha` in hex, no named colors.
-- **Units**: restricted to a sensible allow-list (`px em rem % vw vh fr deg rad grad turn ms s`).
+- **Units**: restricted to a sensible allow-list (`px em rem ch %`, the full viewport family `vw vh vmin vmax dvw dvh svw svh lvw lvh`, `fr deg rad grad turn ms s`).
 - **SCSS** (with `scss: true`): standard-scss + a `scss/*` correctness layer — `@use`/`@forward` module hygiene, interpolation / `calc()` guards, `$variable` & private-member hygiene, SCSS-aware unknown-property/value checks (replacing the core versions that mis-handle `$vars` and nested longhands), and redundant-nesting cleanup.
 - **Selectors**: `:global` pseudo-class permitted (CSS Modules); explicit `&` nesting, capped nesting depth, no qualifying types.
 - **Line endings**: LF enforced (`@stylistic/linebreaks`).
