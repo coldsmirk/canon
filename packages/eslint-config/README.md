@@ -2,9 +2,9 @@
 
 Opinionated, composable ESLint **flat config** for the only two project shapes worth supporting: a pure-TypeScript or a React project. More opinionated than `@antfu/eslint-config`, with far fewer knobs — the two axes are `type` (`app` vs `lib`) and `react`.
 
-Built on the antfu-family toolchain: `typescript-eslint`, `@stylistic`, `eslint-plugin-unicorn`, `eslint-plugin-perfectionist`, `eslint-plugin-import-lite`, `eslint-plugin-antfu`, `eslint-plugin-jsdoc`, `eslint-plugin-regexp`, `@eslint-community/eslint-comments`, `eslint-plugin-package-json` (package.json) + `eslint-plugin-jsonc` (tsconfig), and `@eslint-react/*` + `eslint-plugin-react-hooks` when React is on.
+Built on the antfu-family toolchain: `typescript-eslint`, `@stylistic`, `eslint-plugin-unicorn`, `eslint-plugin-perfectionist`, `eslint-plugin-import-lite`, `eslint-plugin-antfu`, `eslint-plugin-jsdoc`, `eslint-plugin-regexp`, `@eslint-community/eslint-comments`, `@vitest/eslint-plugin` (test files), `eslint-plugin-package-json` (package.json) + `eslint-plugin-jsonc` (tsconfig), and `@eslint-react/*` + `eslint-plugin-react-hooks` when React is on.
 
-It lints TS/JS, package.json, and tsconfig only. It does **not** format CSS/Markdown/etc. — CSS/SCSS is owned by [`@coldsmirk/stylelint-config`](https://github.com/coldsmirk/canon/tree/main/packages/stylelint-config).
+It lints TS/JS source (all eight extensions: `.ts`/`.tsx`/`.mts`/`.cts`/`.js`/`.jsx`/`.mjs`/`.cjs`), package.json, and tsconfig only. It does **not** format CSS/Markdown/etc. — CSS/SCSS is owned by [`@coldsmirk/stylelint-config`](https://github.com/coldsmirk/canon/tree/main/packages/stylelint-config).
 
 ## Install
 
@@ -35,12 +35,12 @@ The factory returns a plain `Linter.Config[]` — `export default` it directly. 
 ```ts
 defineEslintConfig({
   type: "app",   // "app" (lenient) | "lib" (strict, publishable package.json). Default: "app"
-  react: false,  // React rules + hooks + JSX + the test layer (all plugins bundled). Default: false
+  react: false,  // React rules + hooks + JSX + the DOM test layer (all plugins bundled). Default: false
   ignores: []    // extra ignore globs for files not in .gitignore. Default: []
 });
 ```
 
-Those are the only knobs. `.gitignore` is always honoured (merged with `ignores`); the test layer (jest-dom + testing-library on `*.test.{ts,tsx}`) follows `react`.
+Those are the only knobs. `.gitignore` is always honoured (merged with `ignores`). Test files (`*.test.{ts,tsx}`) always get Vitest hygiene (`@vitest/eslint-plugin` — `no-focused-tests`, matcher idioms, …); the DOM test layer (jest-dom + testing-library) follows `react`.
 
 ## package.json & tsconfig
 
@@ -92,6 +92,8 @@ Flat config is last-wins, so a trailing block *can* also relax a canon rule for 
 - **Imports**: sorted by `perfectionist` (type imports first, grouped builtin/external/internal/relative), `import-lite` hygiene.
 - **Filenames**: kebab-case (`unicorn/filename-case`); `README.md` / `AGENTS.md` / `CLAUDE.md` exempt.
 - **Dead code**: core and `@typescript-eslint` `no-unused-vars` are off and delegated to `unused-imports/no-unused-vars`; a leading `_` marks an intentionally-unused arg/var.
+- **Tests**: Vitest hygiene on `*.test.{ts,tsx}` — `no-focused-tests` (an `it.only` reaching CI silently skips the suite), consistent `it`, autofixable matcher idioms (`toHaveLength`, `toBe`, …). `.skip` stays legal.
+- **CommonJS by extension**: `.cjs`/`.cts` files are exempt from `no-require-imports`; node + browser globals are supplied so plain-JS config files don't trip `no-undef`.
 - **package.json / tsconfig**: keys sorted; package.json validated (and, for `type: "lib"`, held to publishable requirements).
 - **React** (when enabled): named imports only (no `React.*`), no class components, no `forwardRef`/`createRef`/`Context.Provider`, JSX confined to `.tsx`, leak-free Web APIs, `rules-of-hooks` + `exhaustive-deps`, and canon's own autofixable JSX shorthands (`disabled` over `disabled={true}`, `<>` over a propless `<Fragment>`).
 
