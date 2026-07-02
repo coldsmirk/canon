@@ -7,6 +7,7 @@ import gitignore from "eslint-config-flat-gitignore";
 import {
   antfu,
   comments,
+  commonjs,
   ignores,
   imports,
   javascript,
@@ -61,6 +62,8 @@ export function defineEslintConfig(
     // core-rule overrides) MUST come after it so its re-enabled rules win over tslint's turn-offs.
     typescript(),
     javascript(),
+    // After `typescript()`: relaxes tslint's `no-require-imports` for CommonJS-by-extension files.
+    commonjs(),
     imports(),
     unicorn(),
     regexp(),

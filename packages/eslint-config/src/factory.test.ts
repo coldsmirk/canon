@@ -24,6 +24,7 @@ describe("defineEslintConfig factory", () => {
     expect(names).toContain("coldsmirk/typescript");
     expect(names).toContain("coldsmirk/stylistic");
     expect(names).toContain("coldsmirk/imports");
+    expect(names).toContain("coldsmirk/commonjs");
   });
 
   describe("pure-TS (react: false)", () => {
@@ -131,6 +132,43 @@ describe("defineEslintConfig factory", () => {
       const ruleNames = Object.keys(config.rules ?? {});
 
       expect(ruleNames.some(r => r.startsWith("testing-library/"))).toBe(false);
+    });
+  });
+
+  describe("module-variant extensions (.mts/.cts/.mjs/.cjs)", () => {
+    it("applies the core layers to every module-variant extension", async () => {
+      for (const file of ["example.mts", "example.cts", "example.mjs", "example.cjs"]) {
+        const config = await resolveConfig(defineEslintConfig(), file);
+
+        expect(config.rules?.["@stylistic/semi"], file).toBeDefined();
+        expect(config.rules?.["unicorn/error-message"], file).toBeDefined();
+      }
+    });
+
+    it("supplies browser + node globals so plain-JS files don't trip no-undef", async () => {
+      const config = await resolveConfig(defineEslintConfig(), "example.cjs");
+
+      expect(config.languageOptions?.globals).toMatchObject({
+        module: expect.anything(),
+        process: expect.anything(),
+        window: expect.anything()
+      });
+    });
+
+    it("exempts CommonJS-by-extension files from no-require-imports (and only them)", async () => {
+      const cjs = await resolveConfig(defineEslintConfig(), "example.cjs");
+      const cts = await resolveConfig(defineEslintConfig(), "example.cts");
+      const ts = await resolveConfig(defineEslintConfig(), "example.ts");
+
+      expect(cjs.rules?.["@typescript-eslint/no-require-imports"]?.[0]).toBe(0);
+      expect(cts.rules?.["@typescript-eslint/no-require-imports"]?.[0]).toBe(0);
+      expect(ts.rules?.["@typescript-eslint/no-require-imports"]?.[0]).toBe(2);
+    });
+
+    it("confines JSX to .tsx for the variants too (react: true)", async () => {
+      const config = await resolveConfig(defineEslintConfig({ react: true }), "example.mts");
+
+      expect(JSON.stringify(config.rules?.["no-restricted-syntax"])).toContain("JSXElement");
     });
   });
 

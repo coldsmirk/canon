@@ -1,5 +1,6 @@
 export * from "./antfu";
 export * from "./comments";
+export * from "./commonjs";
 export * from "./ignores";
 export * from "./imports";
 export * from "./javascript";

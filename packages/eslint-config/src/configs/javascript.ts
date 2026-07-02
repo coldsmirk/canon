@@ -1,6 +1,7 @@
 import type { Linter } from "eslint";
 
 import { defineConfig } from "eslint/config";
+import globals from "globals";
 
 import { GLOB_SRC } from "../globs";
 
@@ -128,6 +129,16 @@ export function javascript(): Linter.Config[] {
   return defineConfig({
     name: "coldsmirk/javascript",
     files: GLOB_SRC,
+    // browser + node globals so `no-undef` doesn't misfire on plain-JS files (`postcss.config.cjs`,
+    // an `.mjs` script) using `process`, `module`, `window`, …. Only JS files need this — on TS
+    // files `no-undef` is off (typescript-eslint's eslint-recommended) and undefineds are the
+    // compiler's job — but scoping globals per-extension would buy nothing: the TS rules ignore them.
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node
+      }
+    },
     rules: javascriptRules
   });
 }
