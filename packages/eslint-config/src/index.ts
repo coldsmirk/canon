@@ -1,13 +1,6 @@
-import type { Linter } from "eslint";
-
-import { defineEslintConfig } from "./factory";
-
+// Single API surface: the factory, nothing else. Deliberately NO prebuilt default export — one
+// would run defineEslintConfig() (17 layers + a gitignore read from disk) at import time for every
+// consumer, including those importing only the named factory, and would contradict the package's
+// `"sideEffects": false`.
 export { defineEslintConfig } from "./factory";
 export type { EslintConfigOptions } from "./types";
-
-// Default export is the ready-to-use config (defaults: TS app, no React) so consumers can
-// `import config from "@coldsmirk/eslint-config"`; pass options via the named `defineEslintConfig`.
-// The explicit annotation keeps the emitted `.d.ts` portable (avoids a deep @eslint/core type ref).
-const config: Linter.Config[] = defineEslintConfig();
-
-export default config;
