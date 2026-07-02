@@ -32,7 +32,9 @@ const FLATTENABLE_KEYS = new Set(["name", "plugins", "languageOptions", "setting
  * Flattening is only lossless while the sources carry nothing but plugins/languageOptions/settings/
  * rules. That held for every preset at the time each layer was written — and rather than trust it
  * to keep holding, this throws on any unknown key, so a preset that grows its own `files` or
- * `processor` in an upgrade fails the test suite instead of silently mis-scoping rules.
+ * `processor` in an upgrade fails loudly instead of silently mis-scoping rules. "Loudly" means
+ * canon's own test suite on upgrade — or config-build time for a consumer whose fresh install
+ * resolved a newer preset minor first; that fail-fast is the sealed contract, not a bug.
  */
 export function flattenConfig(
   name: string,

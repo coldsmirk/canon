@@ -22,7 +22,9 @@ export const GLOB_COMMONJS = ["**/*.cjs", "**/*.cts"];
 
 /**
  * Colocated tests. Uses the `.test.` convention (the Jest/Vitest/React ecosystem default), not
- * `.spec.` — name test files `foo.test.ts` / `foo.test.tsx`.
+ * `.spec.` — name test files `foo.test.ts` / `foo.test.tsx`. Module-variant test files
+ * (`.test.mts` / `.test.mjs` / …) are deliberately NOT test-scoped: they still lint as ordinary
+ * source, but tests belong in plain `.ts`/`.tsx` in this toolchain.
  */
 export const GLOB_TEST = ["**/*.test.{ts,tsx}"];
 
