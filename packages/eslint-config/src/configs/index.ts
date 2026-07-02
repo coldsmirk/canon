@@ -14,3 +14,4 @@ export * from "./tsconfig";
 export * from "./typescript";
 export * from "./unicorn";
 export * from "./unused-imports";
+export * from "./vitest";

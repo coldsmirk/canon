@@ -20,7 +20,8 @@ import {
   tsconfig,
   typescript,
   unicorn,
-  unusedImports
+  unusedImports,
+  vitest
 } from "./configs";
 
 /**
@@ -72,6 +73,8 @@ export function defineEslintConfig(
     antfu(),
     unusedImports(),
     stylistic(),
+    // Vitest hygiene is framework-agnostic, so unlike the DOM test layer it is always on.
+    vitest(),
     // Scoped to package.json / tsconfig files only (disjoint from source globs).
     packageJson(type),
     tsconfig()

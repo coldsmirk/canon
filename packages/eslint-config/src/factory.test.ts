@@ -25,6 +25,7 @@ describe("defineEslintConfig factory", () => {
     expect(names).toContain("coldsmirk/stylistic");
     expect(names).toContain("coldsmirk/imports");
     expect(names).toContain("coldsmirk/commonjs");
+    expect(names).toContain("coldsmirk/vitest");
   });
 
   describe("pure-TS (react: false)", () => {
@@ -127,11 +128,43 @@ describe("defineEslintConfig factory", () => {
       expect(ruleNames.some(r => r.startsWith("testing-library/"))).toBe(false);
     });
 
-    it("is off when react is off", async () => {
+    it("is off when react is off (vitest hygiene stays on)", async () => {
       const config = await resolveConfig(defineEslintConfig(), "widget.test.ts");
       const ruleNames = Object.keys(config.rules ?? {});
 
       expect(ruleNames.some(r => r.startsWith("testing-library/"))).toBe(false);
+      expect(config.rules?.["vitest/no-focused-tests"]?.[0]).toBe(2);
+    });
+  });
+
+  describe("vitest layer (always on)", () => {
+    it("guards test files without react: no-focused-tests and the matcher idioms at error", async () => {
+      const config = await resolveConfig(defineEslintConfig(), "example.test.ts");
+
+      expect(config.rules?.["vitest/no-focused-tests"]?.[0]).toBe(2);
+      expect(config.rules?.["vitest/no-identical-title"]?.[0]).toBe(2);
+      expect(config.rules?.["vitest/prefer-to-have-length"]?.[0]).toBe(2);
+      expect(config.rules?.["vitest/consistent-test-it"]).toMatchObject([2, { fn: "it", withinDescribe: "it" }]);
+    });
+
+    it("keeps `.skip` legal (no-disabled-tests off) — only `.only` is the hazard", async () => {
+      const config = await resolveConfig(defineEslintConfig(), "example.test.ts");
+
+      expect(config.rules?.["vitest/no-disabled-tests"]?.[0]).toBe(0);
+    });
+
+    it("applies to test files only, never to source", async () => {
+      const config = await resolveConfig(defineEslintConfig(), "example.ts");
+      const ruleNames = Object.keys(config.rules ?? {});
+
+      expect(ruleNames.some(r => r.startsWith("vitest/"))).toBe(false);
+    });
+
+    it("coexists with the DOM test layer when react is on", async () => {
+      const config = await resolveConfig(defineEslintConfig({ react: true }), "widget.test.tsx");
+
+      expect(config.rules?.["vitest/no-focused-tests"]?.[0]).toBe(2);
+      expect(Object.keys(config.rules ?? {}).some(r => r.startsWith("jest-dom/"))).toBe(true);
     });
   });
 
