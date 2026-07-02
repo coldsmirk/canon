@@ -1,2 +1,7 @@
 packages:
   - packages/*
+
+# Dev-tooling repo (consumed via devDependencies only): skip pnpm's minimum-release-age
+# supply-chain gate so CI can install fresh plugin releases the day they ship. Deliberate
+# trade-off; the .npmrc form of this setting is NOT read by pnpm — it must live here.
+minimumReleaseAge: 0
