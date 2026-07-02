@@ -40,8 +40,9 @@ describe("defineStylelintConfig", () => {
     for (const config of [defineStylelintConfig(), defineStylelintConfig({ scss: true })]) {
       expect(config.rules?.["order/properties-order"]).toBeDefined();
       expect(config.rules?.["unit-allowed-list"]).toBeDefined();
-      // The modern viewport family must stay allowed — dvh is the mobile-chrome answer.
-      expect(config.rules?.["unit-allowed-list"]).toEqual(expect.arrayContaining(["dvh", "svh", "lvh", "vmin", "vmax", "ch"]));
+      // The viewport family must be complete — allowing dvh but not dvmin would force a disable
+      // comment, exactly what a sealed config must not do.
+      expect(config.rules?.["unit-allowed-list"]).toEqual(expect.arrayContaining(["dvh", "svh", "lvh", "vmin", "dvmin", "svmax", "lvmax", "vi", "dvb", "ch"]));
       expect(config.rules?.["color-named"]).toBe("never");
       expect(config.rules?.["@stylistic/linebreaks"]).toBe("unix");
       expect(config.rules?.["@stylistic/selector-list-comma-newline-before"]).toBe("never-multi-line");
