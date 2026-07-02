@@ -9,6 +9,7 @@ import { defineConfig } from "eslint/config";
 
 import { GLOB_SRC, GLOB_SRC_NO_TSX } from "../globs";
 import { coldsmirkPlugin } from "../rules";
+import { RESTRICTED_SYNTAX_BASE } from "./javascript";
 
 // React APIs/types must be named imports; the React.* namespace and string refs are banned, and JSX
 // is confined to `.tsx`. These selectors extend the framework-agnostic `no-restricted-syntax` set in
@@ -21,11 +22,11 @@ const STRING_REF_SELECTORS = [
 
 const REACT_NAMESPACE_MESSAGE = "Import from 'react' directly instead of using the React.* namespace.";
 
-// Shared by both restricted-syntax sets: ban const enums, export-assignment, string refs, and
-// React.* access via member / type expressions.
+// Shared by both restricted-syntax sets: the framework-agnostic base (imported from the javascript
+// layer, which this rule entry replaces wholesale — see RESTRICTED_SYNTAX_BASE), plus string refs
+// and React.* access via member / type expressions.
 const RESTRICTED_BASE = [
-  "TSEnumDeclaration[const=true]",
-  "TSExportAssignment",
+  ...RESTRICTED_SYNTAX_BASE,
   ...STRING_REF_SELECTORS,
   { selector: "MemberExpression[object.name='React']", message: REACT_NAMESPACE_MESSAGE },
   { selector: "TSQualifiedName[left.name='React']", message: "Import the type from 'react' directly instead of using the React.* namespace." }

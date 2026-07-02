@@ -4,6 +4,14 @@ import { defineConfig } from "eslint/config";
 
 import { GLOB_SRC } from "../globs";
 
+/**
+ * Framework-agnostic `no-restricted-syntax` selectors: ban const enums and `export =`. The react
+ * layer REPLACES `no-restricted-syntax` wholesale for its files (flat config swaps rule options,
+ * it never merges them), so it must re-include this base — importing this constant is what keeps
+ * the two layers from drifting apart.
+ */
+export const RESTRICTED_SYNTAX_BASE = ["TSEnumDeclaration[const=true]", "TSExportAssignment"];
+
 // Rules: https://eslint.org/docs/latest/rules/
 // React/JSX-specific `no-restricted-syntax` selectors live in the `react` layer so a pure-TS
 // config stays free of React concerns; here we keep only framework-agnostic TS hygiene.
@@ -68,7 +76,7 @@ const javascriptRules: Linter.RulesRecord = {
     { message: "Use `Object.getOwnPropertyDescriptor` instead.", property: "__lookupGetter__" },
     { message: "Use `Object.getOwnPropertyDescriptor` instead.", property: "__lookupSetter__" }
   ],
-  "no-restricted-syntax": ["error", "TSEnumDeclaration[const=true]", "TSExportAssignment"],
+  "no-restricted-syntax": ["error", ...RESTRICTED_SYNTAX_BASE],
   "no-return-assign": ["error", "always"],
   "no-script-url": "error",
   "no-self-compare": "error",
