@@ -1,4 +1,4 @@
-import { fileURLToPath } from "node:url";
+import { isAbsolute } from "node:path";
 
 import stylelint from "stylelint";
 
@@ -7,11 +7,13 @@ import { defineStylelintConfig } from "./index";
 describe("defineStylelintConfig", () => {
   it("defaults to a pure-CSS base (no SCSS preset or scss/* rules)", () => {
     const config = defineStylelintConfig();
+    const [base, stylistic] = config.extends as string[];
+    const [order] = config.plugins as string[];
 
-    expect(config.extends).toContain("stylelint-config-standard");
-    expect(config.extends).toContain("@stylistic/stylelint-config");
-    expect(config.extends).not.toContain("stylelint-config-standard-scss");
-    expect(config.plugins).toContain("stylelint-order");
+    // Extends entries are resolved absolute paths (see resolveHere), so match the package segment.
+    expect(base).toMatch(/stylelint-config-standard[/\\]/);
+    expect(stylistic).toContain("@stylistic/stylelint-config");
+    expect(order).toContain("stylelint-order");
     expect(config.rules?.["scss/no-duplicate-load-rules"]).toBeUndefined();
     // Core *-no-unknown stay ON in CSS mode — only the SCSS layer swaps them for scss/* twins.
     expect(config.rules?.["declaration-property-value-no-unknown"]).not.toBeNull();
@@ -20,9 +22,9 @@ describe("defineStylelintConfig", () => {
 
   it("opts into the SCSS layer when scss: true", () => {
     const config = defineStylelintConfig({ scss: true });
+    const [base] = config.extends as string[];
 
-    expect(config.extends).toContain("stylelint-config-standard-scss");
-    expect(config.extends).not.toContain("stylelint-config-standard");
+    expect(base).toMatch(/stylelint-config-standard-scss[/\\]/);
     expect(config.rules?.["scss/no-duplicate-load-rules"]).toBe(true);
     expect(config.rules?.["scss/dollar-variable-default"]).toEqual([true, { ignore: "local" }]);
     // SCSS swaps off the core class-pattern in favour of the interpolation-aware variant.
@@ -34,6 +36,16 @@ describe("defineStylelintConfig", () => {
     expect(config.rules?.["scss/property-no-unknown"]).toBe(true);
     expect(config.rules?.["scss/declaration-property-value-no-unknown"]).toBe(true);
     expect(config.rules?.["scss/block-no-redundant-nesting"]).toBe(true);
+  });
+
+  it("resolves every extends/plugins entry to an absolute path (pnpm-safe for consumers)", () => {
+    // stylelint resolves bare names from the CONSUMER's config-file location, where this package's
+    // own dependencies do not exist under pnpm's strict isolation — a bare name is a regression.
+    for (const config of [defineStylelintConfig(), defineStylelintConfig({ scss: true })]) {
+      for (const entry of [...config.extends as string[], ...config.plugins as string[]]) {
+        expect(isAbsolute(entry)).toBe(true);
+      }
+    }
   });
 
   it("enforces recess ordering, the unit allow-list, and CSS hygiene in both modes", () => {
@@ -53,16 +65,15 @@ describe("defineStylelintConfig", () => {
   });
 });
 
-// Smoke test: load the config through real stylelint and lint a sample, proving the config is
-// structurally valid and every rule resolves (no invalid-option / parse / deprecation warnings).
-const pkgDir = fileURLToPath(new URL("..", import.meta.url));
-
+// Smoke tests: load the config through real stylelint with NO configBasedir — the consumer
+// situation the resolved-absolute-path extends/plugins must survive (bare names only load when the
+// basedir happens to contain the presets) — proving the config is structurally valid and every
+// rule resolves (no invalid-option / parse / deprecation warnings).
 describe("real stylelint load", () => {
   it("loads the CSS config and lints with no config errors or deprecations", async () => {
     const { results } = await stylelint.lint({
       code: "a {\n  color: #ffffff;\n}\n",
-      config: defineStylelintConfig(),
-      configBasedir: pkgDir
+      config: defineStylelintConfig()
     });
 
     expect(results[0]?.invalidOptionWarnings).toEqual([]);
@@ -74,7 +85,6 @@ describe("real stylelint load", () => {
     const { results } = await stylelint.lint({
       code: "$x: 1px;\n\n.a {\n  width: $x;\n}\n",
       config: defineStylelintConfig({ scss: true }),
-      configBasedir: pkgDir,
       customSyntax: "postcss-scss"
     });
 

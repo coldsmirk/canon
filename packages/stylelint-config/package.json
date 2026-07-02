@@ -48,13 +48,14 @@
   },
   "dependencies": {
     "@stylistic/stylelint-config": "^5.0.0",
-    "stylelint-config-recess-order": "^7.0.0",
     "stylelint-config-standard": "^40.0.0",
     "stylelint-config-standard-scss": "^17.0.0",
     "stylelint-order": "^8.0.0"
   },
   "devDependencies": {
-    "stylelint": "^17.14.0"
+    "import-meta-resolve": "^4.2.0",
+    "stylelint": "^17.14.0",
+    "stylelint-config-recess-order": "^7.7.0"
   },
   "peerDependencies": {
     "stylelint": "^17.0.0"

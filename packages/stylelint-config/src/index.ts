@@ -1,6 +1,18 @@
 import type { Config } from "stylelint";
 
+import { fileURLToPath } from "node:url";
+
+import { resolve as importMetaResolve } from "import-meta-resolve";
 import propertyGroups from "stylelint-config-recess-order/groups";
+
+// stylelint resolves bare `extends`/`plugins` names from the CONSUMER's config-file location,
+// where this package's own dependencies are invisible under pnpm's strict isolation — a bare
+// "stylelint-config-standard" fails there with `Could not find`. Resolve every preset/plugin to
+// an absolute path from HERE instead, using the same ESM resolver stylelint itself uses
+// (`require.resolve` would choke on ESM-only presets like stylelint-config-standard-scss, whose
+// exports carry no `require` condition). `import.meta.url` survives the CJS build via tsdown's
+// `__filename` shim, and `import-meta-resolve` is inlined into the bundle (see tsdown.config.ts).
+const resolveHere = (id: string): string => fileURLToPath(importMetaResolve(id, import.meta.url));
 
 export interface StylelintConfigOptions {
   /**
@@ -142,8 +154,8 @@ export function defineStylelintConfig(options: StylelintConfigOptions = {}): Con
   const { scss = false } = options;
 
   return {
-    extends: [scss ? "stylelint-config-standard-scss" : "stylelint-config-standard", "@stylistic/stylelint-config"],
-    plugins: ["stylelint-order"],
+    extends: [resolveHere(scss ? "stylelint-config-standard-scss" : "stylelint-config-standard"), resolveHere("@stylistic/stylelint-config")],
+    plugins: [resolveHere("stylelint-order")],
     rules: {
       ...orderRules,
       ...declarationRules,
