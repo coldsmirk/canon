@@ -43,7 +43,10 @@ for (const { path, contents } of writes) {
 
 console.log(`Bumped ${current} -> ${next} across ${manifests.length} manifests.`);
 console.log("Next:");
-console.log(`  git commit -am "chore(release): v${next}"`);
+// Stage the touched manifests by name — `commit -am` would sweep any unrelated tracked change
+// sitting in the working tree into the release commit.
+console.log("  git add package.json packages/*/package.json");
+console.log(`  git commit -m "chore(release): v${next}"`);
 // Annotated tag (-a): `git push --follow-tags` pushes annotated tags but not lightweight ones.
 console.log(`  git tag -a v${next} -m "v${next}"`);
 console.log("  git push --follow-tags");
