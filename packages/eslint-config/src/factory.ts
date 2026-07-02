@@ -63,10 +63,11 @@ export function defineEslintConfig(
     // core-rule overrides) MUST come after it so its re-enabled rules win over tslint's turn-offs.
     typescript(),
     javascript(),
-    // After `typescript()`: relaxes tslint's `no-require-imports` for CommonJS-by-extension files.
-    commonjs(),
     imports(),
     unicorn(),
+    // MUST follow both `typescript()` and `unicorn()`: it turns their ESM-preference rules off for
+    // CommonJS-by-extension files, and flat config is last-wins.
+    commonjs(),
     regexp(),
     comments(),
     jsdoc(),

@@ -201,14 +201,20 @@ describe("defineEslintConfig factory", () => {
       });
     });
 
-    it("exempts CommonJS-by-extension files from no-require-imports (and only them)", async () => {
+    it("exempts CommonJS-by-extension files from the ESM-preference rules (and only them)", async () => {
       const cjs = await resolveConfig(defineEslintConfig(), "example.cjs");
       const cts = await resolveConfig(defineEslintConfig(), "example.cts");
       const ts = await resolveConfig(defineEslintConfig(), "example.ts");
 
-      expect(cjs.rules?.["@typescript-eslint/no-require-imports"]?.[0]).toBe(0);
-      expect(cts.rules?.["@typescript-eslint/no-require-imports"]?.[0]).toBe(0);
+      for (const config of [cjs, cts]) {
+        expect(config.rules?.["@typescript-eslint/no-require-imports"]?.[0]).toBe(0);
+        // unicorn's rules self-skip .cjs but NOT .cts, so the off must win over the unicorn layer.
+        expect(config.rules?.["unicorn/prefer-module"]?.[0]).toBe(0);
+        expect(config.rules?.["unicorn/prefer-top-level-await"]?.[0]).toBe(0);
+      }
+
       expect(ts.rules?.["@typescript-eslint/no-require-imports"]?.[0]).toBe(2);
+      expect(ts.rules?.["unicorn/prefer-module"]?.[0]).toBe(2);
     });
 
     it("confines JSX to .tsx for the variants too (react: true)", async () => {
@@ -414,16 +420,21 @@ describe("defineEslintConfig factory", () => {
       expect(await lintFatals(configs, "badge.test.tsx", test)).toEqual([]);
     });
 
-    it("reports no no-undef / no-require-imports on an idiomatic .cjs config file", async () => {
+    it("reports no ESM-preference or no-undef misfires on idiomatic .cjs and .cts config files", async () => {
       const eslint = new ESLint({
         cwd: import.meta.dirname,
         overrideConfigFile: true,
         overrideConfig: defineEslintConfig() as never
       });
-      const [result] = await eslint.lintText("const { join } = require(\"node:path\");\n\nmodule.exports = { root: join(__dirname, \"src\") };\n", { filePath: "postcss.config.cjs" });
-      const misfires = (result?.messages ?? []).filter(m => m.ruleId === "no-undef" || m.ruleId === "@typescript-eslint/no-require-imports");
+      const misfireRules = new Set(["no-undef", "@typescript-eslint/no-require-imports", "unicorn/prefer-module", "unicorn/prefer-top-level-await"]);
+      const code = "const { join } = require(\"node:path\");\n\nmodule.exports = { root: join(__dirname, \"src\") };\n";
 
-      expect(misfires).toEqual([]);
+      for (const filePath of ["postcss.config.cjs", "commitlint.config.cts"]) {
+        const [result] = await eslint.lintText(code, { filePath });
+        const misfires = (result?.messages ?? []).filter(m => m.ruleId !== null && misfireRules.has(m.ruleId));
+
+        expect(misfires, filePath).toEqual([]);
+      }
     });
   });
 });

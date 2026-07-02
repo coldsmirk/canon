@@ -93,7 +93,7 @@ Flat config is last-wins, so a trailing block *can* also relax a canon rule for 
 - **Filenames**: kebab-case (`unicorn/filename-case`); `README.md` / `AGENTS.md` / `CLAUDE.md` exempt.
 - **Dead code**: core and `@typescript-eslint` `no-unused-vars` are off and delegated to `unused-imports/no-unused-vars`; a leading `_` marks an intentionally-unused arg/var.
 - **Tests**: Vitest hygiene on `*.test.{ts,tsx}` — `no-focused-tests` (an `it.only` reaching CI silently skips the suite), consistent `it`, autofixable matcher idioms (`toHaveLength`, `toBe`, …). `.skip` stays legal.
-- **CommonJS by extension**: `.cjs`/`.cts` files are exempt from `no-require-imports`; node + browser globals are supplied so plain-JS config files don't trip `no-undef`.
+- **CommonJS by extension**: `.cjs`/`.cts` files are exempt from the ESM-preference rules (`no-require-imports`, `unicorn/prefer-module`, `unicorn/prefer-top-level-await`); node + browser globals are supplied so plain-JS config files don't trip `no-undef`.
 - **package.json / tsconfig**: keys sorted; package.json validated (and, for `type: "lib"`, held to publishable requirements).
 - **React** (when enabled): named imports only (no `React.*`), no class components, no `forwardRef`/`createRef`/`Context.Provider`, JSX confined to `.tsx`, leak-free Web APIs, `rules-of-hooks` + `exhaustive-deps`, and canon's own autofixable JSX shorthands (`disabled` over `disabled={true}`, `<>` over a propless `<Fragment>`).
 
