@@ -29,7 +29,8 @@
     "version:patch": "jiti scripts/version.ts patch"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,jsonc,md,css}": "eslint --fix"
+    "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}": "eslint --fix",
+    "{package.json,tsconfig.json,tsconfig.*.json}": "eslint --fix"
   },
   "devDependencies": {
     "@coldsmirk/commitlint-config": "workspace:*",
