@@ -16,6 +16,11 @@ interface FlattenExtras {
   rules?: Linter.RulesRecord;
 }
 
+// The keys flattenConfig knows how to merge (`name` is discarded — the collapsed block gets ours).
+// Anything else on an upstream preset (`files`, `processor`, `linterOptions`, …) has scoping or
+// behavior we would silently destroy by flattening, so its appearance must be a hard error.
+const FLATTENABLE_KEYS = new Set(["name", "plugins", "languageOptions", "settings", "rules"]);
+
 /**
  * Collapse one-or-more upstream flat configs (a plugin's `recommended` preset, a typescript-eslint
  * config array, …) plus our own additions into a SINGLE named config object scoped to `files`.
@@ -23,6 +28,11 @@ interface FlattenExtras {
  * Used instead of ESLint's `extends` for the homogeneous single-preset layers: `defineConfig({
  * extends })` flattens each preset into separate child objects named `"<name> > <preset>"`, leaking
  * extra names; merging into one block keeps every rule under one stable `name`.
+ *
+ * Flattening is only lossless while the sources carry nothing but plugins/languageOptions/settings/
+ * rules. That held for every preset at the time each layer was written — and rather than trust it
+ * to keep holding, this throws on any unknown key, so a preset that grows its own `files` or
+ * `processor` in an upgrade fails the test suite instead of silently mis-scoping rules.
  */
 export function flattenConfig(
   name: string,
@@ -36,6 +46,12 @@ export function flattenConfig(
   const rules: Linter.RulesRecord = {};
 
   for (const source of sources) {
+    const unknownKeys = Object.keys(source).filter(key => !FLATTENABLE_KEYS.has(key));
+
+    if (unknownKeys.length > 0) {
+      throw new Error(`flattenConfig(${name}): source "${source.name ?? "<unnamed>"}" carries [${unknownKeys.join(", ")}], which flattening would drop — merge it via defineConfig({ extends }) instead.`);
+    }
+
     Object.assign(plugins, source.plugins);
     mergeLanguageOptions(languageOptions, source.languageOptions);
     Object.assign(settings, source.settings);
