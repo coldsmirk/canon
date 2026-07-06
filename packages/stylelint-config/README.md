@@ -1,6 +1,6 @@
 # @coldsmirk/stylelint-config
 
-Opinionated [Stylelint](https://stylelint.io/) config for CSS and SCSS: `stylelint-config-standard` (or `stylelint-config-standard-scss` via the `scss` option) + `@stylistic/stylelint-config`, with [recess](https://github.com/stormwarning/stylelint-config-recess-order) property ordering and a curated set of color / unit / selector / nesting rules.
+Opinionated [Stylelint](https://stylelint.io/) config for CSS and SCSS: `stylelint-config-standard` (or `stylelint-config-standard-scss` via the `scss` option) + `@stylistic/stylelint-config`, with [recess](https://github.com/stormwarning/stylelint-config-recess-order) property ordering and a curated set of color / unit / selector / nesting rules. Tailwind CSS v4 projects opt in with the `tailwind` axis.
 
 ## Install
 
@@ -22,6 +22,9 @@ export default defineStylelintConfig();
 
 // SCSS
 export default defineStylelintConfig({ scss: true });
+
+// Tailwind CSS v4
+export default defineStylelintConfig({ tailwind: true });
 ```
 
 Add a lint script:
@@ -37,11 +40,20 @@ Add a lint script:
 
 ```ts
 defineStylelintConfig({
-  scss: false // enable SCSS: swaps the base to standard-scss and turns on the scss/* layer. Default: false
+  scss: false,    // enable SCSS: swaps the base to standard-scss and turns on the scss/* layer. Default: false
+  tailwind: false // enable Tailwind CSS v4 authoring support (at-rules, value functions, @theme wildcard resets). Default: false
 });
 ```
 
-`scss` is the only knob — like the `react` axis in `@coldsmirk/eslint-config`, SCSS support is opt-in. Rules are otherwise **not configurable** (sealed).
+`scss` and `tailwind` are the only knobs — like the `react` axis in `@coldsmirk/eslint-config`, each is an opt-in project-shape axis, and they compose (`{ scss: true, tailwind: true }` lands the Tailwind allowances on the `scss/*` twin rules). Rules are otherwise **not configurable** (sealed).
+
+### What `tailwind: true` admits
+
+- **At-rules**: the v4 authoring set — `@theme`, `@utility`, `@variant`, `@custom-variant`, `@apply`, `@reference`, `@source` — plus the documented v3-compat bridges `@config` / `@plugin`. The **removed** v3 `@tailwind` directive stays flagged: it is dead code in a v4 project.
+- **Value functions**: `--alpha()` / `--spacing()` (and v3-compat `theme()`), both in `function-no-unknown` and in `declaration-property-value-no-unknown` (whose csstree grammar cannot be taught custom functions — only values *containing* a Tailwind function are exempted; every other declaration keeps full value checking).
+- **`@theme` namespace resets**: wildcard custom-property *names* — `--color-*: initial`, `--*: initial`.
+- **`@import` notation**: string form (`@import "tailwindcss";`), Tailwind's documented convention, instead of the standard preset's `url()` (CSS mode only).
+- Nothing else. `declaration-no-important`, the unit allow-list, color notation, recess ordering and the rest of the sealed baseline stay fully active.
 
 ## What it enforces (highlights)
 

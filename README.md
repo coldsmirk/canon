@@ -9,7 +9,7 @@ A pnpm monorepo of shared ESLint, Stylelint, commitlint, and TypeScript configs 
 | Package | What it is |
 |---|---|
 | [`@coldsmirk/eslint-config`](packages/eslint-config) | Sealed ESLint **flat** config for pure-TypeScript and React projects. `defineEslintConfig({ type, react, ignores })`. |
-| [`@coldsmirk/stylelint-config`](packages/stylelint-config) | CSS / SCSS config — standard + `@stylistic` + recess property ordering. `defineStylelintConfig({ scss })`. |
+| [`@coldsmirk/stylelint-config`](packages/stylelint-config) | CSS / SCSS config — standard + `@stylistic` + recess property ordering; Tailwind v4 via the `tailwind` axis. `defineStylelintConfig({ scss, tailwind })`. |
 | [`@coldsmirk/commitlint-config`](packages/commitlint-config) | Conventional Commits, enforced single-line (no body, no footer). `defineCommitlintConfig()`. |
 | [`@coldsmirk/tsconfig`](packages/tsconfig) | Strict, ESM-first tsconfig presets: `/base` (bundler), `/node` (nodenext), `/react` (base + JSX + DOM). |
 
@@ -32,7 +32,7 @@ See the per-package READMEs for [Stylelint](packages/stylelint-config), [commitl
 
 ## Design
 
-- **Sealed.** Rules are deliberately *not* configurable — the only knobs are the documented option axes (`type`, `react`, `scss`, …). The single escape hatch is an inline `eslint-disable` / `stylelint-disable` comment.
+- **Sealed.** Rules are deliberately *not* configurable — the only knobs are the documented option axes (`type`, `react`, `scss`, `tailwind`, …). The single escape hatch is an inline `eslint-disable` / `stylelint-disable` comment.
 - **One API shape.** Every config is a `defineXxxConfig(options?)` factory — no string `extends`, no copy-pasted config objects.
 - **Formatting without Prettier.** Code style is owned by `@stylistic` (ESLint) and `@stylistic/stylelint-plugin` (Stylelint).
 - **Non-type-checked ESLint tier.** Fast — no `projectService`; type errors are TypeScript's job.

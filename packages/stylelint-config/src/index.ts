@@ -22,6 +22,16 @@ export interface StylelintConfigOptions {
    * @default false
    */
   scss?: boolean;
+  /**
+   * Enable Tailwind CSS v4 authoring support: allow the Tailwind at-rules (`@theme`, `@utility`,
+   * `@variant`, `@custom-variant`, `@apply`, `@reference`, `@source`, plus the compat `@config` /
+   * `@plugin`), the Tailwind value functions (`--alpha()` / `--spacing()` / compat `theme()`), and
+   * `@theme` namespace resets (`--color-*: initial`, `--*: initial`). Composes with `scss` — there
+   * the allowances land on the `scss/*` twin rules. Leave off for projects without Tailwind.
+   *
+   * @default false
+   */
+  tailwind?: boolean;
 }
 
 // ============================================================================
@@ -100,6 +110,68 @@ const stylisticRules: Config["rules"] = {
   "@stylistic/unicode-bom": "never"
 };
 
+// ============================================================================
+// Tailwind v4 Layer
+// ============================================================================
+
+// Shared by the SCSS layer's scss/at-rule-no-unknown and the Tailwind layer's merged override, so
+// the SCSS allowance set cannot drift between the two entries.
+const SCSS_IGNORED_AT_RULES = ["extend", "include"];
+
+// The Tailwind v4 at-rule surface, family-complete on purpose (allowing @theme but rejecting
+// @custom-variant would force the disable comment a sealed config must not): the v4 authoring
+// at-rules plus the two documented v3-compat bridges (@config / @plugin). The removed v3
+// `@tailwind` directive is deliberately NOT here — in a v4 project it is dead code and should be
+// flagged, exactly what at-rule-no-unknown will do.
+const TAILWIND_AT_RULES = ["apply", "config", "custom-variant", "plugin", "reference", "source", "theme", "utility", "variant"];
+
+// Tailwind v4 value functions plus the documented v3-compat theme(). screen() is not listed: it
+// only appears in media-query preludes, which function-no-unknown does not inspect.
+const TAILWIND_FUNCTIONS = ["--alpha", "--spacing", "theme"];
+
+// standard's kebab-case pattern, widened with the two wildcard forms Tailwind's @theme uses for
+// namespace resets: `--color-*: initial` (one namespace) and `--*: initial` (the whole default
+// theme). The wildcard is part of the *name*, so only the name pattern can admit it.
+const TAILWIND_CUSTOM_PROPERTY_PATTERN = String.raw`^(\*|[a-z][a-z0-9]*(-[a-z0-9]+)*(-\*)?)$`;
+
+// declaration-property-value-no-unknown matches values against csstree's grammar, which cannot be
+// taught the Tailwind functions (no ignoreFunctions option). Exempt only VALUES containing one of
+// them — on any property — so the grammar check stays alive for every other declaration;
+// function-name typos remain caught by (scss/)function-no-unknown, whose allow-list is exact.
+const TAILWIND_VALUE_IGNORES = { "/./": [String.raw`/--alpha\(|--spacing\(|\btheme\(/`] };
+
+/**
+ * Tailwind allowances, targeted at whichever `*-no-unknown` family is active: the core rules in
+ * CSS mode, their `scss/` twins when the SCSS layer has swapped the cores off. Shared entries:
+ * `at-rule-no-deprecated` must exempt `@apply` (it collides with the abandoned CSS `@apply`
+ * proposal the rule knows as deprecated), and `custom-property-pattern` (never swapped by the
+ * SCSS layer) admits the wildcard reset names.
+ */
+function tailwindRules(scss: boolean): Config["rules"] {
+  return {
+    "at-rule-no-deprecated": [true, { ignoreAtRules: ["apply"] }],
+    "custom-property-pattern": [
+      TAILWIND_CUSTOM_PROPERTY_PATTERN,
+      { message: "Expected custom property name to be kebab-case (a Tailwind @theme wildcard reset like \"--color-*\" is also allowed)" }
+    ],
+    ...scss
+      ? {
+          "scss/at-rule-no-unknown": [true, { ignoreAtRules: [...SCSS_IGNORED_AT_RULES, ...TAILWIND_AT_RULES] }],
+          "scss/declaration-property-value-no-unknown": [true, { ignoreProperties: TAILWIND_VALUE_IGNORES }],
+          "scss/function-no-unknown": [true, { ignoreFunctions: TAILWIND_FUNCTIONS }]
+        }
+      : {
+          "at-rule-no-unknown": [true, { ignoreAtRules: TAILWIND_AT_RULES }],
+          "declaration-property-value-no-unknown": [true, { ignoreProperties: TAILWIND_VALUE_IGNORES }],
+          "function-no-unknown": [true, { ignoreFunctions: TAILWIND_FUNCTIONS }],
+          // Tailwind's documented form is `@import "tailwindcss";` — string notation everywhere in
+          // the v4 ecosystem — while the standard preset demands url(). CSS mode only: in SCSS the
+          // sass import story is governed by standard-scss, which we must not re-enable over.
+          "import-notation": "string"
+        }
+  };
+}
+
 // SCSS-only: module/interpolation/calc correctness plus variable & member hygiene. The core
 // `at-rule-no-unknown` / `function-no-unknown` / `declaration-property-value-no-unknown` / `property-no-unknown`
 // are turned off in favour of their SCSS-aware twins (which understand `$vars`, namespaced functions, Sass
@@ -114,7 +186,7 @@ const scssRules: Config["rules"] = {
   "selector-class-pattern": null,
   "scss/at-mixin-no-risky-nesting-selector": true,
   "scss/at-root-no-redundant": true,
-  "scss/at-rule-no-unknown": [true, { ignoreAtRules: ["extend", "include"] }],
+  "scss/at-rule-no-unknown": [true, { ignoreAtRules: SCSS_IGNORED_AT_RULES }],
   "scss/at-use-no-redundant-alias": true,
   "scss/at-use-no-unnamespaced": true,
   "scss/block-no-redundant-nesting": true,
@@ -141,17 +213,20 @@ const scssRules: Config["rules"] = {
 /**
  * Build the opinionated Stylelint config: `stylelint-config-standard` + `@stylistic/stylelint-config`,
  * plus recess property ordering and a curated set of color/unit/selector/nesting rules. Set
- * `scss: true` to swap the base for `stylelint-config-standard-scss` and enable the `scss/*` layer.
- * Sealed — rules are not configurable; the only knob is `scss`.
+ * `scss: true` to swap the base for `stylelint-config-standard-scss` and enable the `scss/*` layer;
+ * set `tailwind: true` to admit the Tailwind CSS v4 authoring surface (at-rules, value functions,
+ * `@theme` wildcard resets). Sealed — rules are not configurable; the only knobs are `scss` and
+ * `tailwind`.
  *
  * @example
  * ```ts
- * export default defineStylelintConfig();              // plain CSS
- * export default defineStylelintConfig({ scss: true }); // SCSS
+ * export default defineStylelintConfig();                   // plain CSS
+ * export default defineStylelintConfig({ scss: true });     // SCSS
+ * export default defineStylelintConfig({ tailwind: true }); // Tailwind v4 CSS
  * ```
  */
 export function defineStylelintConfig(options: StylelintConfigOptions = {}): Config {
-  const { scss = false } = options;
+  const { scss = false, tailwind = false } = options;
 
   return {
     extends: [resolveHere(scss ? "stylelint-config-standard-scss" : "stylelint-config-standard"), resolveHere("@stylistic/stylelint-config")],
@@ -164,7 +239,10 @@ export function defineStylelintConfig(options: StylelintConfigOptions = {}): Con
       ...valueRules,
       ...cssHygieneRules,
       ...stylisticRules,
-      ...scss && scssRules
+      // The Tailwind layer spreads AFTER the SCSS layer: its scss/* overrides must win over the
+      // SCSS layer's own scss/at-rule-no-unknown & scss/function-no-unknown entries.
+      ...scss && scssRules,
+      ...tailwind && tailwindRules(scss)
     }
   };
 }

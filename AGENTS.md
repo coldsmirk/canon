@@ -7,13 +7,13 @@ Single canonical source of agent guidance for this repository. `CLAUDE.md` impor
 canon is the shared, opinionated frontend toolchain for every `@coldsmirk` repository (abacus, nodeloom, heddle's console, …). A pnpm-workspace monorepo (Node >= 22) publishing four packages to npm under `@coldsmirk/*` (MIT), all on one **shared version** bumped together by `scripts/version.ts`:
 
 - `@coldsmirk/eslint-config` — sealed ESLint flat config for pure-TS and React projects (`defineEslintConfig`)
-- `@coldsmirk/stylelint-config` — Stylelint for CSS/SCSS with @stylistic and recess ordering (`defineStylelintConfig`)
+- `@coldsmirk/stylelint-config` — Stylelint for CSS/SCSS with @stylistic and recess ordering; Tailwind v4 via the `tailwind` axis (`defineStylelintConfig`)
 - `@coldsmirk/commitlint-config` — Conventional Commits, enforced single-line (no body, no footer)
 - `@coldsmirk/tsconfig` — strict, ESM-first TS configs: `/base` (bundler), `/node` (nodenext), `/react`
 
 ## Design invariants (do not break)
 
-- **Sealed.** Rules are deliberately not configurable; the only knobs are the documented option axes (`type`, `react`, `scss`, …) and the only escape hatch is an inline disable comment. Do not add per-rule options or accept downstream override requests by widening the API.
+- **Sealed.** Rules are deliberately not configurable; the only knobs are the documented option axes (`type`, `react`, `scss`, `tailwind`, …) and the only escape hatch is an inline disable comment. Do not add per-rule options or accept downstream override requests by widening the API.
 - **One API shape.** Every config is a `defineXxxConfig(options?)` factory — no string `extends`, no exported raw config objects.
 - **Formatting without Prettier.** Code style is owned by `@stylistic` (ESLint) and `@stylistic/stylelint-plugin`.
 - **Non-type-checked ESLint tier.** No `projectService` — type errors are TypeScript's job; keep the config fast.
