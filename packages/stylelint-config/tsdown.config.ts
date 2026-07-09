@@ -13,6 +13,13 @@ export default defineConfig({
   noExternal: ["import-meta-resolve", "stylelint-config-recess-order"],
   // No sourcemaps: config/data code, no step-debugging; avoids dangling map references.
   sourcemap: false,
-  // Minified publish: the readable source lives in the public repo; keeps installs lean.
-  minify: true
+  // Ship readable but comment-free bundles: rolldown always drops plain comments; this
+  // drops JSDoc/legal too, keeping @__PURE__-style annotations for tree-shaking.
+  outputOptions: {
+    comments: {
+      annotation: true,
+      jsdoc: false,
+      legal: false
+    }
+  }
 });
