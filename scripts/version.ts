@@ -28,6 +28,12 @@ if (!bump) {
 const current = JSON.parse(readFileSync(rootManifest, "utf-8")).version as string;
 const next = nextVersion(current, bump);
 
+// Guard before any write: bumping from a prerelease (0.2.0-rc.1 + `patch` -> "0.2.NaN") or any
+// other malformed input must abort with the tree untouched.
+if (!/^\d+\.\d+\.\d+$/.test(next)) {
+  throw new Error(`Refusing to write invalid version "${next}" (current "${current}") — pass an explicit x.y.z instead.`);
+}
+
 // Compute every rewrite first; only flush once all reads/replacements succeed, so a bad manifest
 // can never leave a half-bumped tree. Replace only the first (top-level) "version" field.
 const writes = manifests.map(path => {
