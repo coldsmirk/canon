@@ -12,5 +12,7 @@ export default defineConfig({
   // undefined) — bundling sidesteps the cross-format interop entirely.
   noExternal: ["import-meta-resolve", "stylelint-config-recess-order"],
   // No sourcemaps: config/data code, no step-debugging; avoids dangling map references.
-  sourcemap: false
+  sourcemap: false,
+  // Minified publish: the readable source lives in the public repo; keeps installs lean.
+  minify: true
 });

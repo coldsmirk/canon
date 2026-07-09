@@ -8,5 +8,7 @@ export default defineConfig({
   fixedExtension: false,
   // No sourcemaps: this is configuration/data code that nobody step-debugs, and the maps would
   // only point at unpublished `src`. Keeps dist to index.js + index.d.ts with no dangling map refs.
-  sourcemap: false
+  sourcemap: false,
+  // Minified publish: the readable source lives in the public repo; keeps installs lean.
+  minify: true
 });

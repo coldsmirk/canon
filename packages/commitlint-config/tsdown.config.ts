@@ -7,5 +7,7 @@ export default defineConfig({
   // Honour package.json "type": "module" for output extensions: ESM → index.js, CJS → index.cjs.
   fixedExtension: false,
   // No sourcemaps: config/data code, no step-debugging; avoids dangling map references.
-  sourcemap: false
+  sourcemap: false,
+  // Minified publish: the readable source lives in the public repo; keeps installs lean.
+  minify: true
 });
