@@ -2,7 +2,6 @@ import type { Linter } from "eslint";
 
 import reactPlugin from "@eslint-react/eslint-plugin";
 import reactDom from "eslint-plugin-react-dom";
-import reactHooks from "eslint-plugin-react-hooks";
 import reactNamingConvention from "eslint-plugin-react-naming-convention";
 import reactWebApi from "eslint-plugin-react-web-api";
 import { defineConfig } from "eslint/config";
@@ -68,13 +67,16 @@ const reactRules: Linter.RulesRecord = {
   "react-dom/no-unsafe-target-blank": "error",
   "react-dom/no-use-form-state": "error",
   "react-dom/no-void-elements-with-children": "error",
-  "@eslint-react/set-state-in-effect": "off",
   // Off: false-positives on stable components obtained from hooks/context (e.g. TanStack Form's
   // `<form.Field>` / `<Subscribe>` via useFormContext) — it can't tell them from inline definitions.
   "@eslint-react/static-components": "off",
   "@eslint-react/jsx-no-key-after-spread": "error",
   "@eslint-react/jsx-no-comment-textnodes": "error",
-  "@eslint-react/jsx-no-useless-fragment": ["error", { allowExpressions: true }],
+  // Off: it decides fragment-ness by NAME (jsxFragmentFactory, default `Fragment`) with no
+  // import-source check, and its autofix then unwraps a local/third-party `<Fragment>` component —
+  // deleting real rendered output. Same misfiring-autofix category as the unicorn turn-offs;
+  // coldsmirk/jsx-shorthand-fragment covers the shorthand half import-aware.
+  "@eslint-react/jsx-no-useless-fragment": "off",
   "react-naming-convention/context-name": "error",
   "@eslint-react/globals": "error",
   "@eslint-react/no-access-state-in-setstate": "error",
@@ -125,26 +127,21 @@ const reactRules: Linter.RulesRecord = {
   "react-web-api/no-leaked-timeout": "error"
 };
 
-// react-hooks v7 ships many compiler-era rules; keep only rules-of-hooks + exhaustive-deps on.
-// Rules: https://react.dev/reference/eslint-plugin-react-hooks
-const reactHooksRules: Linter.RulesRecord = {
-  "react-hooks/component-hook-factories": "off",
-  "react-hooks/config": "off",
-  "react-hooks/error-boundaries": "off",
-  "react-hooks/exhaustive-deps": ["error", { additionalHooks: "^use(Deep|Shallow|Isomorphic)|^useDidUpdate" }],
-  "react-hooks/gating": "off",
-  "react-hooks/globals": "off",
-  "react-hooks/immutability": "off",
-  "react-hooks/incompatible-library": "off",
-  "react-hooks/preserve-manual-memoization": "off",
-  "react-hooks/purity": "off",
-  "react-hooks/refs": "off",
-  "react-hooks/rules-of-hooks": "error",
-  "react-hooks/set-state-in-effect": "off",
-  "react-hooks/set-state-in-render": "off",
-  "react-hooks/static-components": "off",
-  "react-hooks/unsupported-syntax": "off",
-  "react-hooks/use-memo": "off"
+// Hooks discipline comes from @eslint-react's NATIVE ports of the react-hooks rules — running a
+// separate eslint-plugin-react-hooks alongside the preset double-reports every finding (upstream
+// even ships `disable-conflict-eslint-plugin-react-hooks` for that split, disabling the standalone
+// plugin, not its own rules). Keep only the two classics on: exhaustive-deps is raised from the
+// preset's warn to error, and the compiler-era additions (purity / use-memo / set-state-in-render /
+// error-boundaries / set-state-in-effect) stay off — they assume React Compiler semantics.
+// Rules: https://eslint-react.xyz/docs/rules/overview
+const hooksRules: Linter.RulesRecord = {
+  "@eslint-react/error-boundaries": "off",
+  "@eslint-react/exhaustive-deps": ["error", { additionalHooks: "^use(Deep|Shallow|Isomorphic)|^useDidUpdate" }],
+  "@eslint-react/purity": "off",
+  "@eslint-react/rules-of-hooks": "error",
+  "@eslint-react/set-state-in-effect": "off",
+  "@eslint-react/set-state-in-render": "off",
+  "@eslint-react/use-memo": "off"
 };
 
 // Uses `extends` (like typescript()) rather than the single-block flatten: @eslint-react's
@@ -164,8 +161,7 @@ export function react(): Linter.Config[] {
         // upstream rule sets change, unlike a hand-maintained list.
         reactPlugin.configs["disable-dom"],
         reactPlugin.configs["disable-web-api"],
-        reactPlugin.configs["disable-naming-convention"],
-        reactHooks.configs.flat.recommended
+        reactPlugin.configs["disable-naming-convention"]
       ],
       plugins: {
         coldsmirk: coldsmirkPlugin,
@@ -175,7 +171,7 @@ export function react(): Linter.Config[] {
       },
       rules: {
         ...reactRules,
-        ...reactHooksRules,
+        ...hooksRules,
         "no-restricted-syntax": reactRestrictedSyntax
       }
     },

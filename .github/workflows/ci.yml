@@ -19,7 +19,8 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     strategy:
-      # Both supported Node lines (engines: >=22): 22 is the floor, 24 is active LTS.
+      # Both supported Node lines (engines: ^22.22.2 || >=24.15.0): setup-node resolves each to
+      # the latest release of that line, which satisfies the floor.
       matrix:
         node: [22, 24]
     steps:
@@ -27,7 +28,8 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        # Pinned to a full commit SHA (same policy as release.yml) so a moved tag can't swap code.
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
 
       - name: Setup Node
         uses: actions/setup-node@v6

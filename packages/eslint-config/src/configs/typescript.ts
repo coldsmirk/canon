@@ -39,10 +39,12 @@ const typescriptRules: Linter.RulesRecord = {
       leadingUnderscore: "forbid",
       trailingUnderscore: "forbid"
     },
+    // Variables may lead with `_`: unused-imports/no-unused-vars documents the leading underscore
+    // as the intentionally-unused escape hatch (varsIgnorePattern), so naming must not veto it.
     {
       selector: "variable",
       format: ["camelCase", "UPPER_CASE", "PascalCase"],
-      leadingUnderscore: "forbid",
+      leadingUnderscore: "allow",
       trailingUnderscore: "forbid"
     },
     {

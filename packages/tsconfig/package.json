@@ -18,6 +18,7 @@
   "author": {
     "name": "Venus"
   },
+  "sideEffects": false,
   "type": "commonjs",
   "exports": {
     "./base": "./base.json",
@@ -30,6 +31,12 @@
     "node.json",
     "react.json"
   ],
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.8"
+  },
   "engines": {
     "node": ">=22"
   },

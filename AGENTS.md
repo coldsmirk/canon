@@ -4,7 +4,7 @@ Single canonical source of agent guidance for this repository. `CLAUDE.md` impor
 
 ## Project Overview
 
-canon is the shared, opinionated frontend toolchain for every `@coldsmirk` repository (abacus, nodeloom, heddle's console, …). A pnpm-workspace monorepo (Node >= 22) publishing four packages to npm under `@coldsmirk/*` (MIT), all on one **shared version** bumped together by `scripts/version.ts`:
+canon is the shared, opinionated frontend toolchain for every `@coldsmirk` repository (abacus, nodeloom, heddle's console, …). A pnpm-workspace monorepo (Node ^22.22.2 || >=24.15 for development; each package declares its own honest engine floor) publishing four packages to npm under `@coldsmirk/*` (MIT), all on one **shared version** bumped together by `scripts/version.ts`:
 
 - `@coldsmirk/eslint-config` — sealed ESLint flat config for pure-TS and React projects (`defineEslintConfig`)
 - `@coldsmirk/stylelint-config` — Stylelint for CSS/SCSS with @stylistic and recess ordering; Tailwind v4 via the `tailwind` axis (`defineStylelintConfig`)

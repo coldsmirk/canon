@@ -27,7 +27,9 @@ jobs:
           fetch-depth: 0 # full history + tags so git-cliff can build notes since the previous tag
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        # Third-party actions in this high-privilege job (contents: write + id-token: write) are
+        # pinned to full commit SHAs so a moved tag can't swap the code they run.
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -39,12 +41,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify tag matches every published package version
+      - name: Verify tag matches every package version
+        # The root manifest is private (never published) but is the version source the next bump
+        # reads from — it must move in lockstep with the tag too.
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           FAIL=0
-          for manifest in packages/*/package.json; do
-            if [ "$(node -p "require('./$manifest').private === true")" = "true" ]; then
+          for manifest in package.json packages/*/package.json; do
+            if [ "$manifest" != "package.json" ] && [ "$(node -p "require('./$manifest').private === true")" = "true" ]; then
               continue
             fi
             VERSION="$(node -p "require('./$manifest').version")"
@@ -76,7 +80,7 @@ jobs:
 
       - name: Generate release notes
         id: changelog
-        uses: orhun/git-cliff-action@v4
+        uses: orhun/git-cliff-action@f50e11560dce63f7c33227798f90b924471a88b5 # v4
         with:
           config: cliff.toml
           args: --latest

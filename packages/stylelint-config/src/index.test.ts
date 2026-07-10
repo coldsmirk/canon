@@ -69,6 +69,9 @@ describe("defineStylelintConfig", () => {
     expect(config.rules?.["function-no-unknown"]).toEqual([true, { ignoreFunctions: ["--alpha", "--spacing", "theme"] }]);
     // @apply collides with the abandoned CSS @apply proposal at-rule-no-deprecated knows.
     expect(config.rules?.["at-rule-no-deprecated"]).toEqual([true, { ignoreAtRules: ["apply"] }]);
+    // Block-form @utility / @custom-variant put `&` directly inside the at-rule — the at-rule IS
+    // the scoping root in v4, so the core rule must exempt the family.
+    expect(config.rules?.["nesting-selector-no-missing-scoping-root"]).toEqual([true, { ignoreAtRules: ["custom-variant", "utility", "variant"] }]);
     expect(config.rules?.["custom-property-pattern"]).toBeDefined();
     // CSS mode never touches the scss/* twins.
     expect(config.rules?.["scss/at-rule-no-unknown"]).toBeUndefined();
@@ -135,7 +138,9 @@ describe("real stylelint load", () => {
 describe("tailwind option axis (real lint)", () => {
   // The shape a Tailwind v4 entry stylesheet actually takes (cascade-layer statement first — the
   // spec allows @layer before @import — then layered imports, @theme with a namespace reset,
-  // @custom-variant / @utility definitions, and @apply inside a rule).
+  // @custom-variant / @utility definitions in both the inline and block forms — the block forms
+  // put `&` directly inside the at-rule, which nesting-selector-no-missing-scoping-root must
+  // accept — and @apply inside a rule).
   const TAILWIND_CSS = `@layer theme, base, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
@@ -148,8 +153,22 @@ describe("tailwind option axis (real lint)", () => {
 
 @custom-variant theme-midnight (&:where([data-theme="midnight"] *));
 
+@custom-variant any-hover {
+  @media (any-hover: hover) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 @utility tab-4 {
   tab-size: 4;
+}
+
+@utility scrollbar-hidden {
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .btn {
@@ -195,7 +214,9 @@ describe("tailwind option axis (real lint)", () => {
 
   it("composes with scss: true (allowances land on the scss/* twins)", async () => {
     const { results } = await stylelint.lint({
-      code: "@theme inline {\n  --color-canvas: #ffffff;\n}\n\n.a {\n  @apply flex;\n}\n",
+      // Includes a block-form @utility: nesting-selector-no-missing-scoping-root is a core rule in
+      // SCSS mode too (never swapped), so its Tailwind exemption must hold here as well.
+      code: "@theme inline {\n  --color-canvas: #ffffff;\n}\n\n@utility scrollbar-hidden {\n  &::-webkit-scrollbar {\n    display: none;\n  }\n}\n\n.a {\n  @apply flex;\n}\n",
       // scss/partial-no-import can only judge imports when it knows the linted file's name.
       codeFilename: "app.scss",
       config: defineStylelintConfig({ scss: true, tailwind: true }),

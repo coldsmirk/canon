@@ -81,7 +81,7 @@ export function defineEslintConfig(
     tsconfig()
   ];
 
-  // The test layer (jest-dom + testing-library) is DOM/React-oriented, so it follows `react`.
+  // The test layer (testing-library) is DOM/React-oriented, so it follows `react`.
   if (enableReact) {
     layers.push(react(), test());
   }

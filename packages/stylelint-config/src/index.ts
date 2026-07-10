@@ -8,10 +8,9 @@ import propertyGroups from "stylelint-config-recess-order/groups";
 // stylelint resolves bare `extends`/`plugins` names from the CONSUMER's config-file location,
 // where this package's own dependencies are invisible under pnpm's strict isolation — a bare
 // "stylelint-config-standard" fails there with `Could not find`. Resolve every preset/plugin to
-// an absolute path from HERE instead, using the same ESM resolver stylelint itself uses
-// (`require.resolve` would choke on ESM-only presets like stylelint-config-standard-scss, whose
-// exports carry no `require` condition). `import.meta.url` survives the CJS build via tsdown's
-// `__filename` shim, and `import-meta-resolve` is inlined into the bundle (see tsdown.config.ts).
+// an absolute path from HERE instead, using the same ESM resolver stylelint itself uses.
+// `import-meta-resolve` (a regular dependency) is preferred over the native `import.meta.resolve`,
+// which module runners like Vitest and jiti don't reliably provide.
 const resolveHere = (id: string): string => fileURLToPath(importMetaResolve(id, import.meta.url));
 
 export interface StylelintConfigOptions {
@@ -150,6 +149,11 @@ const TAILWIND_VALUE_IGNORES = { "/./": [String.raw`/--alpha\(|--spacing\(|\bthe
 function tailwindRules(scss: boolean): Config["rules"] {
   return {
     "at-rule-no-deprecated": [true, { ignoreAtRules: ["apply"] }],
+    // Tailwind's block-form `@utility` / `@custom-variant` (and `@variant`) put `&` directly
+    // inside the at-rule — in v4 the at-rule IS the scoping root, so exempt the family. The rule
+    // is a core rule in both CSS and SCSS modes (the SCSS layer never swaps it), so this shared
+    // entry covers both.
+    "nesting-selector-no-missing-scoping-root": [true, { ignoreAtRules: ["custom-variant", "utility", "variant"] }],
     "custom-property-pattern": [
       TAILWIND_CUSTOM_PROPERTY_PATTERN,
       { message: "Expected custom property name to be kebab-case (a Tailwind @theme wildcard reset like \"--color-*\" is also allowed)" }

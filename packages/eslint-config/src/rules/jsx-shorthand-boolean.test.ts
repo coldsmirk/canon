@@ -34,4 +34,12 @@ describe("coldsmirk/jsx-shorthand-boolean", () => {
       expect(lintFix(code).fixed).toBe(false);
     }
   });
+
+  it("reports but does not fix when a comment sits inside the attribute", () => {
+    const code = "const a = <Comp disabled={/* required */ true} />;\n";
+    const result = lintFix(code);
+
+    expect(result.output).toBe(code);
+    expect(result.messages).toHaveLength(1);
+  });
 });

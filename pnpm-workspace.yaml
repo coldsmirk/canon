@@ -5,3 +5,9 @@ packages:
 # supply-chain gate so CI can install fresh plugin releases the day they ship. Deliberate
 # trade-off; the .npmrc form of this setting is NOT read by pnpm — it must live here.
 minimumReleaseAge: 0
+
+# Surface peer-dependency issues instead of silently auto-installing them. pnpm 11 does not read
+# the .npmrc forms of these settings (auto-install-peers / strict-peer-dependencies) — they must
+# live here as camelCase keys, or the lockfile silently records the defaults.
+autoInstallPeers: false
+strictPeerDependencies: true

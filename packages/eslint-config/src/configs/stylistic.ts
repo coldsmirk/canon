@@ -2,6 +2,7 @@ import type { Linter } from "eslint";
 
 import stylisticPlugin from "@stylistic/eslint-plugin";
 
+import { withCommentSafeFixes } from "../comment-safe-fix";
 import { GLOB_SRC } from "../globs";
 import { flattenConfig } from "../utils";
 
@@ -81,6 +82,13 @@ const stylisticRules: Linter.RulesRecord = {
   "@stylistic/yield-star-spacing": ["error", { after: true, before: false }]
 };
 
+// Comment-safe autofixes, applied IN PLACE at module load: several upstream JSX fixers delete
+// comments they overlap (jsx-tag-spacing, jsx-equals-spacing), and a multi-pass --fix run then
+// cascades on the comment-free output. In-place keeps the plugin object's identity, so a trailing
+// consumer config that re-registers @stylistic (e.g. an official customize() output) composes
+// instead of throwing "Cannot redefine plugin".
+const commentSafeStylistic = withCommentSafeFixes(stylisticPlugin);
+
 // `customize` output is fully determined by these fixed options — compute it once at module load,
 // matching how every other layer keeps its rules object as a module-level constant.
 const customizedStylistic = stylisticPlugin.configs.customize({
@@ -96,5 +104,10 @@ const customizedStylistic = stylisticPlugin.configs.customize({
 });
 
 export function stylistic(): Linter.Config[] {
-  return [flattenConfig("coldsmirk/stylistic", GLOB_SRC, [customizedStylistic], { rules: stylisticRules })];
+  return [
+    flattenConfig("coldsmirk/stylistic", GLOB_SRC, [customizedStylistic], {
+      plugins: { "@stylistic": commentSafeStylistic },
+      rules: stylisticRules
+    })
+  ];
 }

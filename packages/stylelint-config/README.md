@@ -8,7 +8,7 @@ Opinionated [Stylelint](https://stylelint.io/) config for CSS and SCSS: `styleli
 pnpm add -D stylelint @coldsmirk/stylelint-config
 ```
 
-Requires Stylelint **>= 17** and Node **>= 22**.
+Requires Stylelint **>= 17.8** (the floor of the enabled rules — `relative-selector-nesting-notation` and `selector-no-deprecated` shipped in 17.8) and Node **>= 22.9** (Stylelint 17.8+ depends on `write-file-atomic@7`, whose 22.x floor is 22.9). The package is **ESM-only**; Stylelint 17 loads ESM configs natively.
 
 ## Usage
 
@@ -50,6 +50,7 @@ defineStylelintConfig({
 ### What `tailwind: true` admits
 
 - **At-rules**: the v4 authoring set — `@theme`, `@utility`, `@variant`, `@custom-variant`, `@apply`, `@reference`, `@source` — plus the documented v3-compat bridges `@config` / `@plugin`. The **removed** v3 `@tailwind` directive stays flagged: it is dead code in a v4 project.
+- **Block-form `&`**: `nesting-selector-no-missing-scoping-root` exempts `@utility` / `@custom-variant` / `@variant`, whose block forms place `&` directly inside the at-rule (the at-rule *is* the scoping root in v4).
 - **Value functions**: `--alpha()` / `--spacing()` (and v3-compat `theme()`), both in `function-no-unknown` and in `declaration-property-value-no-unknown` (whose csstree grammar cannot be taught custom functions — only values *containing* a Tailwind function are exempted; every other declaration keeps full value checking).
 - **`@theme` namespace resets**: wildcard custom-property *names* — `--color-*: initial`, `--*: initial`.
 - **`@import` notation**: string form (`@import "tailwindcss";`), Tailwind's documented convention, instead of the standard preset's `url()` (CSS mode only).

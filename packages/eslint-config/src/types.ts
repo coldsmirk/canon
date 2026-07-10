@@ -7,9 +7,10 @@ export interface EslintConfigOptions {
    */
   type?: "app" | "lib";
   /**
-   * Enable React support: `@eslint-react` (recommended-typescript), react-hooks, react-dom /
-   * react-web-api / react-naming-convention, the JSX restrictions, and the DOM test layer
-   * (jest-dom + testing-library on test files). All plugins are bundled — no extra install.
+   * Enable React support: `@eslint-react` (recommended-typescript, including its native
+   * rules-of-hooks / exhaustive-deps), react-dom / react-web-api / react-naming-convention, the
+   * JSX restrictions, and the DOM test layer (testing-library on test files). All plugins are
+   * bundled — no extra install.
    * Vitest hygiene on test files is framework-agnostic and always on, independent of this flag.
    *
    * @default false

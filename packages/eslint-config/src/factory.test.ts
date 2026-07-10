@@ -16,6 +16,20 @@ function resolveConfig(configs: Linter.Config[], file: string) {
   return eslint.calculateConfigForFile(file);
 }
 
+// Run real text through the full React config with --fix (multi-pass, like the CLI) and return
+// the fixed output — the comment-survival suite below exercises fixer interactions across passes.
+async function fixText(code: string, filePath: string) {
+  const eslint = new ESLint({
+    cwd: import.meta.dirname,
+    overrideConfigFile: true,
+    overrideConfig: defineEslintConfig({ react: true }) as never,
+    fix: true
+  });
+  const [result] = await eslint.lintText(code, { filePath });
+
+  return result?.output ?? code;
+}
+
 // Lint real text through the full config and return only the fatal (parse/crash/invalid-option)
 // messages — the smoke suite below asserts these are empty; ordinary rule findings are fine.
 async function lintFatals(configs: Linter.Config[], filePath: string, code: string) {
@@ -54,7 +68,7 @@ describe("defineEslintConfig factory", () => {
       const config = await resolveConfig(defineEslintConfig(), "example.tsx");
 
       expect(config.rules?.["@eslint-react/no-class-component"]).toBeUndefined();
-      expect(config.rules?.["react-hooks/rules-of-hooks"]).toBeUndefined();
+      expect(config.rules?.["@eslint-react/rules-of-hooks"]).toBeUndefined();
       expect(config.rules?.["coldsmirk/jsx-shorthand-boolean"]).toBeUndefined();
     });
 
@@ -72,7 +86,22 @@ describe("defineEslintConfig factory", () => {
       const config = await resolveConfig(defineEslintConfig({ react: true }), "example.tsx");
 
       expect(config.rules?.["@eslint-react/no-class-component"]?.[0]).toBe(2);
-      expect(config.rules?.["react-hooks/rules-of-hooks"]?.[0]).toBe(2);
+      expect(config.rules?.["@eslint-react/rules-of-hooks"]?.[0]).toBe(2);
+    });
+
+    it("uses @eslint-react's native hook rules — exactly one source, no standalone react-hooks twin", async () => {
+      const config = await resolveConfig(defineEslintConfig({ react: true }), "example.tsx");
+
+      // The two classics, at error (the preset ships exhaustive-deps at warn).
+      expect(config.rules?.["@eslint-react/rules-of-hooks"]?.[0]).toBe(2);
+      expect(config.rules?.["@eslint-react/exhaustive-deps"]).toMatchObject([2, { additionalHooks: expect.stringContaining("useDidUpdate") }]);
+      // No second plugin reporting the same findings: a conditional hook call must yield ONE error.
+      expect(Object.keys(config.rules ?? {}).some(rule => rule.startsWith("react-hooks/"))).toBe(false);
+      // The compiler-era additions stay off.
+      expect(config.rules?.["@eslint-react/purity"]?.[0]).toBe(0);
+      expect(config.rules?.["@eslint-react/use-memo"]?.[0]).toBe(0);
+      expect(config.rules?.["@eslint-react/set-state-in-render"]?.[0]).toBe(0);
+      expect(config.rules?.["@eslint-react/error-boundaries"]?.[0]).toBe(0);
     });
 
     it("bans React.* namespace access via no-restricted-syntax", async () => {
@@ -87,11 +116,17 @@ describe("defineEslintConfig factory", () => {
       expect(JSON.stringify(config.rules?.["no-restricted-syntax"])).toContain("JSXElement");
     });
 
-    it("enables the adopted React rules (useless fragment, context display name)", async () => {
+    it("enables the adopted React rules (key after spread, context display name)", async () => {
       const config = await resolveConfig(defineEslintConfig({ react: true }), "example.tsx");
 
-      expect(config.rules?.["@eslint-react/jsx-no-useless-fragment"]).toMatchObject([2, { allowExpressions: true }]);
+      expect(config.rules?.["@eslint-react/jsx-no-key-after-spread"]?.[0]).toBe(2);
       expect(config.rules?.["@eslint-react/no-missing-context-display-name"]?.[0]).toBe(2);
+    });
+
+    it("turns off jsx-no-useless-fragment (name-based fragment detection: its autofix unwraps non-React `<Fragment>` components)", async () => {
+      const config = await resolveConfig(defineEslintConfig({ react: true }), "example.tsx");
+
+      expect(config.rules?.["@eslint-react/jsx-no-useless-fragment"]?.[0]).toBe(0);
     });
 
     it("enables canon's own autofixable JSX shorthand rules", async () => {
@@ -103,27 +138,18 @@ describe("defineEslintConfig factory", () => {
   });
 
   describe("test layer (follows react)", () => {
-    it("applies BOTH jest-dom and testing-library rules to .test files", async () => {
+    it("applies the testing-library rules to .test files", async () => {
       const config = await resolveConfig(defineEslintConfig({ react: true }), "widget.test.tsx");
       const ruleNames = Object.keys(config.rules ?? {});
 
-      // Regression guard: both presets merge into ONE block (coldsmirk/test) via flattenConfig;
-      // their namespaces are disjoint (jest-dom/* vs testing-library/*), so neither clobbers the other.
-      expect(ruleNames.some(r => r.startsWith("jest-dom/"))).toBe(true);
       expect(ruleNames.some(r => r.startsWith("testing-library/"))).toBe(true);
     });
 
-    it("runs jest-dom rules on ESLint 10 without crashing (5.5.0 calls the removed getSourceCode; @eslint/compat fixup polyfills it)", async () => {
-      const eslint = new ESLint({
-        cwd: import.meta.dirname,
-        overrideConfigFile: true,
-        overrideConfig: defineEslintConfig({ react: true }) as never,
-        fix: true
-      });
-      // `toHaveAttribute("class", ...)` reaches prefer-to-have-class, whose fixer calls context.getSourceCode().
-      const [result] = await eslint.lintText("test(\"x\", () => { expect(el).toHaveAttribute(\"class\", \"a\"); });\n", { filePath: "widget.test.tsx" });
+    it("does NOT bundle jest-dom (its latest release peers eslint ^6–^9 only — it would break every consumer install on eslint 10)", async () => {
+      const config = await resolveConfig(defineEslintConfig({ react: true }), "widget.test.tsx");
+      const ruleNames = Object.keys(config.rules ?? {});
 
-      expect(result?.messages.filter(m => m.fatal)).toHaveLength(0);
+      expect(ruleNames.some(r => r.startsWith("jest-dom/"))).toBe(false);
     });
 
     it("turns off testing-library rules too strict for component-library / wrapped-render tests", async () => {
@@ -177,7 +203,7 @@ describe("defineEslintConfig factory", () => {
       const config = await resolveConfig(defineEslintConfig({ react: true }), "widget.test.tsx");
 
       expect(config.rules?.["vitest/no-focused-tests"]?.[0]).toBe(2);
-      expect(Object.keys(config.rules ?? {}).some(r => r.startsWith("jest-dom/"))).toBe(true);
+      expect(Object.keys(config.rules ?? {}).some(r => r.startsWith("testing-library/"))).toBe(true);
     });
   });
 
@@ -396,6 +422,22 @@ describe("defineEslintConfig factory", () => {
 
       expect(config.rules?.["@eslint-react/static-components"]?.[0]).toBe(0);
     });
+
+    it("keeps the documented `_`-prefixed intentionally-unused escape hatch legal for variables", async () => {
+      const eslint = new ESLint({
+        cwd: import.meta.dirname,
+        overrideConfigFile: true,
+        overrideConfig: defineEslintConfig() as never
+      });
+      // The rest-destructuring omit idiom: `_pick` is intentionally unused by contract.
+      const code = "const { pick: _pick, ...rest } = { pick: 1, keep: 2 };\n\nexport const kept = rest;\n";
+      const [result] = await eslint.lintText(code, { filePath: "example.ts" });
+      const escapeHatchBreakers = (result?.messages ?? []).filter(
+        m => m.ruleId === "@typescript-eslint/naming-convention" || m.ruleId === "unused-imports/no-unused-vars"
+      );
+
+      expect(escapeHatchBreakers).toEqual([]);
+    });
   });
 
   describe("unicorn v70 curation", () => {
@@ -430,6 +472,91 @@ describe("defineEslintConfig factory", () => {
       // Syntax-level version can't ignore string arrays (the type-aware twin defaults to that),
       // so it taxes the most common, correct sort with boilerplate comparators.
       expect(config.rules?.["unicorn/require-array-sort-compare"]?.[0]).toBe(0);
+    });
+  });
+
+  // Multi-pass --fix through the FULL config: a per-rule comment guard is not enough, because an
+  // upstream fixer (e.g. @stylistic jsx-tag-spacing / jsx-equals-spacing) can delete the comment
+  // in pass 1 and a downstream fixer then rewrites the comment-free output in pass 2. The
+  // comment-safe wrapper around @stylistic must keep the comment through EVERY pass.
+  describe("autofix never deletes comments (full config, multi-pass)", () => {
+    it("keeps a comment inside a fragment tag through every fixer pass", async () => {
+      const output = await fixText("import { Fragment } from \"react\";\n\nexport function A() {\n  return <Fragment /* keep */>x</Fragment>;\n}\n", "frag.tsx");
+
+      expect(output).toContain("/* keep */");
+    });
+
+    it("keeps a comment inside a boolean attribute through every fixer pass", async () => {
+      const output = await fixText("export function B() {\n  return <button type=\"button\" disabled /* keep */ ={true}>x</button>;\n}\n", "btn.tsx");
+
+      expect(output).toContain("/* keep */");
+    });
+
+    it("keeps empty and whitespace-only comments through every fixer pass", async () => {
+      for (const comment of ["/**/", "/* */"]) {
+        const output = await fixText(`import { Fragment } from "react";\n\nexport function Empty() {\n  return <Fragment ${comment} >x</Fragment>;\n}\n`, "empty.tsx");
+
+        expect(output, comment).toContain(comment);
+      }
+
+      const multilineEmpty = await fixText("/*\n*/\nexport const value = 1;\n", "empty-multiline.ts");
+
+      expect(multilineEmpty).toContain("/*\n*/");
+    });
+
+    it("still applies comment-formatting fixes that preserve the logical content", async () => {
+      const spaced = await fixText("//unspaced\nexport const value = 1;\n", "spaced.ts");
+      const multiline = await fixText("/* first\n * second */\nexport const value = 1;\n", "multiline.ts");
+
+      expect(spaced).toContain("// unspaced");
+      expect(multiline).toContain("// first\n// second");
+    });
+
+    it("still applies the comment-free fixes (the wrapper withholds only unsafe ones)", async () => {
+      const output = await fixText("import { Fragment } from \"react\";\n\nexport function C() {\n  return <Fragment>x</Fragment>;\n}\n", "clean.tsx");
+
+      expect(output).toContain("<>x</>");
+    });
+
+    it("keeps a comment inside an import that a shorthand fix just made unused", async () => {
+      // Pass 1 rewrites <Fragment> to <>; pass 2's unused-imports removal must be withheld —
+      // deleting the import would take the comment with it.
+      const output = await fixText("import { /* keep */ Fragment } from \"react\";\n\nexport function D() {\n  return <Fragment>x</Fragment>;\n}\n", "imp.tsx");
+
+      expect(output).toContain("/* keep */");
+      expect(output).toContain("<>x</>");
+    });
+
+    it("guards unused-import suggestions with the same comment-safe range check", async () => {
+      const eslint = new ESLint({
+        cwd: import.meta.dirname,
+        overrideConfigFile: true,
+        overrideConfig: defineEslintConfig({ react: true }) as never
+      });
+      const unsafeCode = "import { /* keep */ Fragment } from \"react\";\n";
+      const safeCode = "import { Fragment } from \"react\";\n";
+      const [unsafeResult] = await eslint.lintText(unsafeCode, { filePath: "unsafe.tsx" });
+      const [safeResult] = await eslint.lintText(safeCode, { filePath: "safe.tsx" });
+      const unsafeMessage = unsafeResult?.messages.find(message => message.ruleId === "unused-imports/no-unused-imports");
+      const safeMessage = safeResult?.messages.find(message => message.ruleId === "unused-imports/no-unused-imports");
+
+      expect(unsafeMessage?.fix).toBeUndefined();
+      expect(unsafeMessage?.suggestions ?? []).toEqual([]);
+      expect(safeMessage?.suggestions?.[0]?.fix.range).toEqual([0, safeCode.length]);
+    });
+
+    it("looks through a type-only Fragment binding to the React value binding", async () => {
+      const output = await fixText("import { Fragment } from \"react\";\n\nexport function Typed() {\n  type Fragment = string;\n  const value: Fragment = \"x\";\n\n  return <Fragment>{value}</Fragment>;\n}\n", "typed.tsx");
+
+      expect(output).toContain("return <>{value}</>;");
+    });
+
+    it("preserves @stylistic's plugin identity, so a trailing config can re-register it", async () => {
+      const { default: stylisticPlugin } = await import("@stylistic/eslint-plugin");
+      const configs = defineEslintConfig({}, { plugins: { "@stylistic": stylisticPlugin } });
+
+      // A different plugin object under the same namespace would throw "Cannot redefine plugin".
+      await expect(resolveConfig(configs, "example.ts")).resolves.toBeDefined();
     });
   });
 

@@ -18,8 +18,10 @@ A pnpm monorepo of shared ESLint, Stylelint, commitlint, and TypeScript configs 
 Install only the configs you need — each package's README has the full details. For ESLint:
 
 ```bash
-pnpm add -D @coldsmirk/eslint-config eslint
+pnpm add -D @coldsmirk/eslint-config eslint jiti typescript@6
 ```
+
+(`typescript@6` — the latest is the native 7, which the linting stack cannot load yet; `jiti` — only needed for a TypeScript config file like the one below.)
 
 ```ts
 // eslint.config.ts
@@ -38,7 +40,7 @@ See the per-package READMEs for [Stylelint](packages/stylelint-config), [commitl
 - **Non-type-checked ESLint tier.** Fast — no `projectService`; type errors are TypeScript's job.
 - **Dogfooded.** This repo lints, type-checks, and commit-lints itself with its own configs.
 
-Requires **Node ≥ 22**.
+Node requirements are declared per package (the honest floor of each package's dependency tree): `eslint-config` needs **^22.22.2 || ≥ 24.15**, `commitlint-config` needs **≥ 22.12**, `stylelint-config` needs **≥ 22.9**, `tsconfig` needs **≥ 22**. Developing this repo needs **^22.22.2 || ≥ 24.15**.
 
 ## Development
 

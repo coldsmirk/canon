@@ -5,9 +5,11 @@ import * as jsoncParser from "jsonc-eslint-parser";
 
 import { GLOB_TSCONFIG } from "../globs";
 
-// `compilerOptions` key order, grouped by the official tsconfig schema categories (Projects,
-// Language and Environment, Modules, …) rather than alphabetically — mirrors @antfu/eslint-config so
-// the file reads the way the TypeScript docs are organized. Keep in sync as TS adds options.
+// `compilerOptions` key order, grouped by the compiler's own option categories (Projects,
+// Language and Environment, Modules, …) rather than alphabetically — the grouping
+// @antfu/eslint-config also uses, extended here to the FULL option set (upstream lags TS releases).
+// The authoritative list is the compiler itself; diff against a new TypeScript release with:
+//   node -e 'for (const d of require("typescript").optionDeclarations) console.log((d.category?.message ?? "-") + ": " + d.name)'
 const compilerOptionsOrder = [
   // Projects
   "incremental",
@@ -35,6 +37,7 @@ const compilerOptionsOrder = [
   "rootDir",
   "rootDirs",
   "customConditions",
+  "noUncheckedSideEffectImports",
   "module",
   "moduleResolution",
   "moduleSuffixes",
@@ -47,6 +50,7 @@ const compilerOptionsOrder = [
   "types",
   "allowArbitraryExtensions",
   "allowImportingTsExtensions",
+  "rewriteRelativeImportExtensions",
   "allowUmdGlobalAccess",
   // JavaScript Support
   "allowJs",
@@ -55,6 +59,7 @@ const compilerOptionsOrder = [
   // Type Checking
   "strict",
   "strictBindCallApply",
+  "strictBuiltinIteratorReturn",
   "strictFunctionTypes",
   "strictNullChecks",
   "strictPropertyInitialization",
@@ -71,6 +76,7 @@ const compilerOptionsOrder = [
   "noUncheckedIndexedAccess",
   "noUnusedLocals",
   "noUnusedParameters",
+  "stableTypeOrdering",
   "useUnknownInCatchVariables",
   // Emit
   "declaration",
@@ -80,7 +86,6 @@ const compilerOptionsOrder = [
   "emitBOM",
   "emitDeclarationOnly",
   "importHelpers",
-  "importsNotUsedAsValues",
   "inlineSourceMap",
   "inlineSources",
   "mapRoot",
@@ -91,7 +96,6 @@ const compilerOptionsOrder = [
   "outDir",
   "outFile",
   "preserveConstEnums",
-  "preserveValueImports",
   "removeComments",
   "sourceMap",
   "sourceRoot",
@@ -107,7 +111,38 @@ const compilerOptionsOrder = [
   "erasableSyntaxOnly",
   // Completeness
   "skipDefaultLibCheck",
-  "skipLibCheck"
+  "skipLibCheck",
+  // Compiler Diagnostics
+  "diagnostics",
+  "explainFiles",
+  "extendedDiagnostics",
+  "generateCpuProfile",
+  "generateTrace",
+  "listEmittedFiles",
+  "listFiles",
+  "noCheck",
+  "traceResolution",
+  // Output Formatting
+  "noErrorTruncation",
+  "preserveWatchOutput",
+  "pretty",
+  // Watch and Build Modes
+  "assumeChangesOnlyAffectDirectDependencies",
+  // Editor Support
+  "disableSizeLimit",
+  "plugins",
+  // Backwards Compatibility (deprecated/removed flags, kept so legacy tsconfigs still sort cleanly)
+  "charset",
+  "importsNotUsedAsValues",
+  "keyofStringsOnly",
+  "noImplicitUseStrict",
+  "noStrictGenericChecks",
+  "out",
+  "preserveValueImports",
+  "suppressExcessPropertyErrors",
+  "suppressImplicitAnyIndexErrors",
+  // Deprecation handling (uncategorized in the compiler)
+  "ignoreDeprecations"
 ];
 
 /**

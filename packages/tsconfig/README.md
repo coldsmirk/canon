@@ -14,6 +14,8 @@ Three variants, matched to the project shapes used here:
 pnpm add -D @coldsmirk/tsconfig typescript
 ```
 
+Requires TypeScript **>= 5.8** (the base enables `erasableSyntaxOnly`, added in 5.8); TypeScript 6 and the native 7 both work — the configs are plain JSON.
+
 ## Usage
 
 A bundler-driven project (Vite, tsdown, …) — `tsconfig.json`:
@@ -35,6 +37,7 @@ A Node library emitted by `tsc` directly (no bundler):
 {
   "extends": "@coldsmirk/tsconfig/node",
   "compilerOptions": {
+    "rootDir": "src", // TS 6+ requires it explicitly when shaping output with outDir
     "outDir": "dist",
     "declaration": true // /node already sets nodenext resolution
   },
