@@ -1,5 +1,5 @@
-// Version arithmetic, structured manifest rewriting, and injected file-transaction logic for
-// scripts/version.ts, split out so each boundary can be tested without running the script on import.
+// Version arithmetic and manifest rewriting for scripts/version.ts, split out so each boundary can
+// be tested without running the script on import.
 import semver from "semver";
 
 /**
@@ -33,9 +33,11 @@ export function computeNextVersion(current: string, bump: string): string {
 
 /**
  * Rewrite the top-level "version" field of a manifest's raw text, preserving formatting. Verifies
- * the lockstep invariant (the manifest must carry `expectedCurrent`) and re-parses the result to
- * prove the rewrite actually landed — a manifest missing a top-level "version" would otherwise be
- * skipped silently.
+ * the lockstep invariant (the manifest must carry `expectedCurrent`), replaces the first
+ * `"version": "…"` occurrence, and re-parses the result to prove the rewrite landed on the real
+ * top-level field — a manifest with no version, or whose first match is a nested lookalike, aborts
+ * loudly instead of being silently mis-rewritten. That verification is the whole safety story:
+ * this only ever runs against the repo's conventional package.json files inside a git tree.
  */
 export function rewriteManifestVersion(contents: string, expectedCurrent: string, next: string, label: string): string {
   const manifestVersion = (JSON.parse(contents) as { version?: string }).version;
@@ -44,113 +46,14 @@ export function rewriteManifestVersion(contents: string, expectedCurrent: string
     throw new Error(`${label} carries version "${manifestVersion}", expected "${expectedCurrent}" — lockstep bump aborted.`);
   }
 
-  const range = findTopLevelVersionRange(contents);
-
-  if (range === undefined) {
-    throw new Error(`Failed to locate the top-level version field in ${label}.`);
-  }
-
-  const rewritten = `${contents.slice(0, range.start)}${JSON.stringify(next)}${contents.slice(range.end)}`;
+  // Replacer as a function: a plain-string replacement would interpret `$`-sequences in it.
+  const rewritten = contents.replace(/"version"\s*:\s*"[^"]+"/, () => `"version": "${next}"`);
 
   if ((JSON.parse(rewritten) as { version?: string }).version !== next) {
-    throw new Error(`Failed to rewrite the version field in ${label}.`);
+    throw new Error(`Failed to rewrite the top-level version field in ${label}.`);
   }
 
   return rewritten;
-}
-
-export interface VersionFileWrite {
-  contents: string;
-  original: string;
-  path: string;
-}
-
-export interface VersionFileOperations {
-  remove: (path: string) => void;
-  rename: (from: string, to: string) => void;
-  write: (path: string, contents: string) => void;
-}
-
-/**
- * Stage both the original and next contents beside every target before replacing any target. If
- * replacement fails, restore already-replaced files in reverse order using the staged originals.
- */
-export function writeVersionFiles(
-  files: readonly VersionFileWrite[],
-  operations: VersionFileOperations,
-  temporaryPath: (path: string, index: number, purpose: "next" | "rollback") => string
-): void {
-  const staged = files.map((file, index) => {
-    return {
-      ...file,
-      nextPath: temporaryPath(file.path, index, "next"),
-      rollbackPath: temporaryPath(file.path, index, "rollback")
-    };
-  });
-  let replaced = 0;
-
-  try {
-    for (const file of staged) {
-      operations.write(file.rollbackPath, file.original);
-    }
-
-    for (const file of staged) {
-      operations.write(file.nextPath, file.contents);
-    }
-
-    for (const file of staged) {
-      operations.rename(file.nextPath, file.path);
-      replaced += 1;
-    }
-  } catch (error) {
-    const rollbackFailures: Array<{ error: unknown; path: string; rollbackPath: string }> = [];
-
-    for (let index = replaced - 1; index >= 0; index -= 1) {
-      const file = staged[index]!;
-
-      try {
-        operations.rename(file.rollbackPath, file.path);
-      } catch (rollbackError) {
-        rollbackFailures.push({
-          error: rollbackError,
-          path: file.path,
-          rollbackPath: file.rollbackPath
-        });
-      }
-    }
-
-    const retainedBackups = new Set(rollbackFailures.map(failure => failure.rollbackPath));
-
-    for (const file of staged) {
-      safelyRemove(file.nextPath, operations);
-
-      if (!retainedBackups.has(file.rollbackPath)) {
-        safelyRemove(file.rollbackPath, operations);
-      }
-    }
-
-    if (rollbackFailures.length > 0) {
-      const details = rollbackFailures
-        .map(failure => `${failure.path} (backup: ${failure.rollbackPath})`)
-        .join(", ");
-      const failures = rollbackFailures.map(failure => new Error(`Failed to restore ${failure.path} from ${failure.rollbackPath}.`, {
-        cause: failure.error
-      }));
-
-      throw new AggregateError(
-        [error, ...failures],
-        `Version update failed and rollback was incomplete for ${details}.`,
-        { cause: error }
-      );
-    }
-
-    throw error;
-  }
-
-  for (const file of staged) {
-    safelyRemove(file.nextPath, operations);
-    safelyRemove(file.rollbackPath, operations);
-  }
 }
 
 function nextVersion(version: string, kind: string): string {
@@ -174,166 +77,4 @@ function nextVersion(version: string, kind: string): string {
   }
 
   return semver.valid(kind) ?? kind;
-}
-
-function findTopLevelVersionRange(contents: string): { end: number; start: number } | undefined {
-  let cursor = skipWhitespace(contents, 0);
-
-  if (contents[cursor] !== "{") {
-    return undefined;
-  }
-
-  cursor += 1;
-  let versionRange: { end: number; start: number } | undefined;
-
-  while (cursor < contents.length) {
-    cursor = skipWhitespace(contents, cursor);
-
-    if (contents[cursor] === "}") {
-      return versionRange;
-    }
-
-    const key = readJsonString(contents, cursor);
-    cursor = skipWhitespace(contents, key.end);
-
-    if (contents[cursor] !== ":") {
-      return undefined;
-    }
-
-    cursor = skipWhitespace(contents, cursor + 1);
-
-    if (key.value === "version") {
-      const value = readJsonString(contents, cursor);
-      versionRange = { start: cursor, end: value.end };
-      cursor = value.end;
-    } else {
-      cursor = skipJsonValue(contents, cursor);
-    }
-
-    cursor = skipWhitespace(contents, cursor);
-
-    if (contents[cursor] === ",") {
-      cursor += 1;
-      continue;
-    }
-
-    if (contents[cursor] === "}") {
-      return versionRange;
-    }
-
-    return undefined;
-  }
-
-  return undefined;
-}
-
-function readJsonString(contents: string, start: number): { end: number; value: string } {
-  if (contents[start] !== "\"") {
-    throw new Error("Expected a JSON string.");
-  }
-
-  for (let cursor = start + 1; cursor < contents.length; cursor += 1) {
-    if (contents[cursor] === "\\") {
-      cursor += 1;
-    } else if (contents[cursor] === "\"") {
-      const end = cursor + 1;
-      return { end, value: JSON.parse(contents.slice(start, end)) as string };
-    }
-  }
-
-  throw new Error("Unterminated JSON string.");
-}
-
-function skipJsonValue(contents: string, start: number): number {
-  const depth = { arrays: 0, objects: 0 };
-  let inString = false;
-
-  for (let cursor = start; cursor < contents.length; cursor += 1) {
-    const character = contents[cursor];
-
-    if (inString) {
-      if (character === "\\") {
-        cursor += 1;
-      } else if (character === "\"") {
-        inString = false;
-      }
-
-      continue;
-    }
-
-    const result = processJsonValueCharacter(character, depth);
-
-    if (result === "string") {
-      inString = true;
-    } else if (result === "delimiter") {
-      return cursor;
-    }
-  }
-
-  return contents.length;
-}
-
-function processJsonValueCharacter(
-  character: string | undefined,
-  depth: { arrays: number; objects: number }
-): "delimiter" | "other" | "string" {
-  switch (character) {
-    case "\"": {
-      return "string";
-    }
-
-    case "[": {
-      depth.arrays += 1;
-
-      return "other";
-    }
-
-    case "]": {
-      depth.arrays -= 1;
-
-      return "other";
-    }
-
-    case "{": {
-      depth.objects += 1;
-
-      return "other";
-    }
-
-    case "}": {
-      if (depth.objects > 0) {
-        depth.objects -= 1;
-
-        return "other";
-      }
-
-      return depth.arrays === 0 ? "delimiter" : "other";
-    }
-
-    case ",": {
-      return depth.arrays === 0 && depth.objects === 0 ? "delimiter" : "other";
-    }
-
-    default: {
-      return "other";
-    }
-  }
-}
-
-function skipWhitespace(contents: string, start: number): number {
-  let cursor = start;
-
-  while (cursor < contents.length && /\s/u.test(contents[cursor]!)) {
-    cursor += 1;
-  }
-
-  return cursor;
-}
-
-function safelyRemove(path: string, operations: VersionFileOperations): void {
-  try {
-    operations.remove(path);
-  } catch {
-    // Preserve the original staging or replacement error.
-  }
 }

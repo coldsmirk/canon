@@ -6,12 +6,11 @@
 // monotonicity guards) where it is unit-tested. Workspace links are path-based, so the lockfile
 // does not change. Run via jiti (already a dev dependency):
 //   jiti scripts/version.ts <patch|minor|major|x.y.z>
-import { randomUUID } from "node:crypto";
-import { globSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, relative } from "node:path";
+import { globSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { computeNextVersion, rewriteManifestVersion, writeVersionFiles } from "./version-core";
+import { computeNextVersion, rewriteManifestVersion } from "./version-core";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -34,28 +33,18 @@ const current = JSON.parse(readFileSync(rootManifest, "utf-8")).version as strin
 const next = computeNextVersion(current, bump);
 
 // Compute every rewrite first; only flush once all reads/replacements succeed, so a bad manifest
-// can never leave a half-bumped tree.
+// can never leave a half-bumped tree. A crash mid-flush is git's job to undo (`git checkout` the
+// manifests) — no transactional staging needed for five files in a tracked tree.
 const writes = manifests.map(path => {
-  const original = readFileSync(path, "utf-8");
-
   return {
     path,
-    original,
-    contents: rewriteManifestVersion(original, current, next, relative(root, path))
+    contents: rewriteManifestVersion(readFileSync(path, "utf-8"), current, next, relative(root, path))
   };
 });
 
-const transactionId = `${process.pid}-${randomUUID()}`;
-
-writeVersionFiles(
-  writes,
-  {
-    remove: unlinkSync,
-    rename: renameSync,
-    write: (path, contents) => writeFileSync(path, contents)
-  },
-  (path, index, purpose) => join(dirname(path), `.${basename(path)}.canon-version-${transactionId}-${index}-${purpose}`)
-);
+for (const { path, contents } of writes) {
+  writeFileSync(path, contents);
+}
 
 console.log(`Bumped ${current} -> ${next} across ${manifests.length} manifests.`);
 console.log("Next:");
