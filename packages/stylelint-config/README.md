@@ -8,7 +8,7 @@ Opinionated [Stylelint](https://stylelint.io/) config for CSS and SCSS: `styleli
 pnpm add -D stylelint @coldsmirk/stylelint-config
 ```
 
-Requires Stylelint **>= 17.8** (the floor of the enabled rules — `relative-selector-nesting-notation` and `selector-no-deprecated` shipped in 17.8) and Node **>= 22.9** (Stylelint 17.8+ depends on `write-file-atomic@7`, whose 22.x floor is 22.9). The package is **ESM-only**; Stylelint 17 loads ESM configs natively.
+Requires Stylelint **>= 17.8** (the floor of the enabled rules — `relative-selector-nesting-notation` and `selector-no-deprecated` shipped in 17.8) and Node **>= 24** (the shared floor of every `@coldsmirk` config). The package is **ESM-only**; Stylelint 17 loads ESM configs natively.
 
 The examples use `stylelint.config.js`, so the consumer's `package.json` must set `"type": "module"`. If you use `stylelint.config.ts` instead, also install TypeScript:
 

@@ -46,7 +46,7 @@
     "@commitlint/lint": "^21.2.0"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=24"
   },
   "publishConfig": {
     "access": "public"

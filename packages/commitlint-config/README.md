@@ -8,7 +8,7 @@ Opinionated [commitlint](https://commitlint.js.org/) config: [Conventional Commi
 pnpm add -D @coldsmirk/commitlint-config @commitlint/cli
 ```
 
-Requires Node **>= 22.12** (commitlint 21 is ESM-only with this floor; this package is ESM-only too).
+Requires Node **>= 24** (the shared floor of every `@coldsmirk` config). The package is **ESM-only**, like commitlint 21 itself.
 
 Also install `typescript` and `@types/node` — they are required (non-optional) peers of `cosmiconfig-typescript-loader`, which `@commitlint/cli` always depends on, so a strict-peer install flags them **regardless of config format**. At runtime they are only actually loaded for a TypeScript config file (`commitlint.config.ts`, as shown below); a plain `.js`/`.mjs` config never touches them, but the install-time peer graph is unconditional:
 

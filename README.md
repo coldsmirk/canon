@@ -40,7 +40,7 @@ See the per-package READMEs for [Stylelint](packages/stylelint-config), [commitl
 - **Non-type-checked ESLint tier.** Fast — no `projectService`; type errors are TypeScript's job.
 - **Dogfooded.** This repo lints, type-checks, and commit-lints itself with its own configs.
 
-Node requirements are declared per package (the honest floor of each package's dependency tree): `eslint-config` needs **^22.22.2 || ≥ 24.15**, `commitlint-config` needs **≥ 22.12**, `stylelint-config` needs **≥ 22.9**, `tsconfig` needs **≥ 22**. Developing this repo needs **^22.22.2 || ≥ 24.15**.
+Requires **Node ≥ 24** — one uniform floor across every package and for developing this repo (it also satisfies the strictest dependency-tree floor among the bundled plugins).
 
 ## Development
 
