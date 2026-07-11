@@ -1,4 +1,4 @@
-import type { ESLint } from "eslint";
+import type { ESLint, Rule } from "eslint";
 
 import { Linter } from "eslint";
 import tslint from "typescript-eslint";
@@ -47,4 +47,51 @@ describe("withCommentSafeFixes", () => {
     expect(messages[0]?.fix).toMatchObject({ range: [19, 24], text: "renamed" });
     expect(parseCount).toBe(1);
   });
+
+  // The `/**` opener leaves a stray `*` on the first line of the comment value — the signature
+  // normalization must treat `/* … */` and `/** … */` bodies as the same logical content.
+  it("allows a content-preserving restyle of a JSDoc-style comment", () => {
+    const messages = lintJsdocComment(fixer => fixer.replaceTextRange([0, 18], "// keep me"));
+
+    expect(messages[0]?.fix).toMatchObject({ text: "// keep me" });
+  });
+
+  it("withholds a fix that deletes a JSDoc-style comment", () => {
+    const messages = lintJsdocComment(fixer => fixer.removeRange([0, 18]));
+
+    expect(messages[0]?.fix).toBeUndefined();
+  });
 });
+
+// Lint `/**\n * keep me\n */` (range [0, 18]) followed by a statement, through a wrapped plugin
+// whose single rule reports the given fix on Program.
+function lintJsdocComment(fix: NonNullable<Rule.ReportDescriptor["fix"]>) {
+  const plugin: ESLint.Plugin = withCommentSafeFixes({
+    rules: {
+      restyle: {
+        create(context) {
+          return {
+            Program(node) {
+              context.report({
+                fix,
+                message: "Restyle the comment.",
+                node
+              });
+            }
+          };
+        },
+        meta: {
+          fixable: "code",
+          schema: [],
+          type: "layout"
+        }
+      }
+    }
+  });
+
+  return new Linter().verify("/**\n * keep me\n */\nconst value = 1;\n", {
+    files: ["**"],
+    plugins: { test: plugin },
+    rules: { "test/restyle": "error" }
+  }, { filename: "jsdoc.js" });
+}

@@ -169,7 +169,11 @@ function normalizeCommentLines(comment: Comment): string[] {
     return [comment.value.trim()];
   }
 
-  const starred = lines.every((line, index) => index === 0 || index === lines.length - 1 ? line.trim().length === 0 : /^\s*\*/u.test(line));
+  // Boundary lines are pure decoration when they hold only whitespace and asterisks: the `/**`
+  // opener leaves a stray `*` on the first value line (and `**/` on the last), which must not
+  // demote a starred comment to the line-by-line form — `/* foo */` and `/** foo */` bodies must
+  // normalize to the same signature.
+  const starred = lines.every((line, index) => index === 0 || index === lines.length - 1 ? /^[\s*]*$/u.test(line) : /^\s*\*/u.test(line));
   const contentLines = starred ? lines.slice(1, -1) : lines;
   const normalized = contentLines.map(line => line.replace(/^\s*\*?\s*/u, "").trimEnd());
 
