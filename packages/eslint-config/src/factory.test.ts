@@ -129,10 +129,11 @@ describe("defineEslintConfig factory", () => {
       expect(config.rules?.["@eslint-react/no-missing-context-display-name"]?.[0]).toBe(2);
     });
 
-    it("turns off jsx-no-useless-fragment (name-based fragment detection: its autofix unwraps non-React `<Fragment>` components)", async () => {
+    it("turns off the upstream jsx-no-useless-fragment in favour of the import-aware coldsmirk port", async () => {
       const config = await resolveConfig(defineEslintConfig({ react: true }), "example.tsx");
 
       expect(config.rules?.["@eslint-react/jsx-no-useless-fragment"]?.[0]).toBe(0);
+      expect(config.rules?.["coldsmirk/jsx-no-useless-fragment"]?.[0]).toBe(2);
     });
 
     it("enables canon's own autofixable JSX shorthand rules", async () => {
@@ -535,6 +536,16 @@ describe("defineEslintConfig factory", () => {
       const output = await fixText("import { Fragment } from \"react\";\n\nexport function C() {\n  return <Fragment>x</Fragment>;\n}\n", "clean.tsx");
 
       expect(output).toContain("<>x</>");
+    });
+
+    it("unwraps a useless React Fragment and then removes the now-unused import", async () => {
+      // coldsmirk/jsx-no-useless-fragment and jsx-shorthand-fragment both fire on this node with
+      // overlapping fixes; multi-pass --fix converges on the unwrapped form either way, and the
+      // comment-free import is then legal to delete.
+      const output = await fixText("import { Fragment } from \"react\";\n\nexport function E() {\n  return <Fragment><div>a</div></Fragment>;\n}\n", "unwrap.tsx");
+
+      expect(output).toContain("return <div>a</div>;");
+      expect(output).not.toContain("Fragment");
     });
 
     it("keeps a comment inside an import that a shorthand fix just made unused", async () => {

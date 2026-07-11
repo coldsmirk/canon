@@ -99,7 +99,7 @@ Flat config is last-wins, so a trailing block *can* also relax a canon rule for 
 - **Tests**: Vitest hygiene on `*.test.{ts,tsx}` — `no-focused-tests` (an `it.only` reaching CI silently skips the suite), consistent `it`, autofixable matcher idioms (`toHaveLength`, `toBe`, …). `.skip` stays legal.
 - **CommonJS by extension**: `.cjs`/`.cts` files are exempt from the ESM-preference rules (`no-require-imports`, `unicorn/prefer-module`, `unicorn/prefer-top-level-await`); node + browser globals are supplied so plain-JS config files don't trip `no-undef`.
 - **package.json / tsconfig**: keys sorted; package.json validated (and, for `type: "lib"`, held to publishable requirements).
-- **React 19+** (when enabled): named imports only (no `React.*`), no class components, no `forwardRef`/`createRef`/`Context.Provider`, JSX confined to `.tsx`, leak-free Web APIs, `rules-of-hooks` + `exhaustive-deps` (via `@eslint-react`'s native ports — exactly one report per finding), and canon's own autofixable JSX shorthands (`disabled` over `disabled={true}`, `<>` over a propless `<Fragment>` — only when `Fragment` provably resolves to React's, and never at the cost of a comment).
+- **React 19+** (when enabled): named imports only (no `React.*`), no class components, no `forwardRef`/`createRef`/`Context.Provider`, JSX confined to `.tsx`, leak-free Web APIs, `rules-of-hooks` + `exhaustive-deps` (via `@eslint-react`'s native ports — exactly one report per finding), and canon's own autofixable JSX hygiene rules (`disabled` over `disabled={true}`, `<>` over a propless `<Fragment>`, and no useless fragments — a named `<Fragment>` is only touched when it provably resolves to React's, and no fix ever costs a comment).
 
 ## License
 

@@ -48,7 +48,8 @@ const noTsxRestrictedSyntax: Linter.RuleEntry = [
 
 // Rules: https://eslint-react.xyz/docs/rules/overview
 const reactRules: Linter.RulesRecord = {
-  // canon's own autofixable JSX shorthands (see ../rules) — not shipped by @stylistic or @eslint-react.
+  // canon's own JSX hygiene rules (see ../rules) — not shipped by @stylistic or @eslint-react.
+  "coldsmirk/jsx-no-useless-fragment": "error",
   "coldsmirk/jsx-shorthand-boolean": "error",
   "coldsmirk/jsx-shorthand-fragment": "error",
   "react-dom/no-dangerously-set-innerhtml": "error",
@@ -74,8 +75,7 @@ const reactRules: Linter.RulesRecord = {
   "@eslint-react/jsx-no-comment-textnodes": "error",
   // Off: it decides fragment-ness by NAME (jsxFragmentFactory, default `Fragment`) with no
   // import-source check, and its autofix then unwraps a local/third-party `<Fragment>` component —
-  // deleting real rendered output. Same misfiring-autofix category as the unicorn turn-offs;
-  // coldsmirk/jsx-shorthand-fragment covers the shorthand half import-aware.
+  // deleting real rendered output. coldsmirk/jsx-no-useless-fragment reimplements it import-aware.
   "@eslint-react/jsx-no-useless-fragment": "off",
   "react-naming-convention/context-name": "error",
   "@eslint-react/globals": "error",
