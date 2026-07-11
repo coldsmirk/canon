@@ -31,7 +31,15 @@ A bundler-driven project (Vite, tsdown, …) — `tsconfig.json`:
 }
 ```
 
-A Node library emitted by `tsc` directly (no bundler):
+A Node library emitted by `tsc` directly (no bundler) must declare ESM when its source uses ordinary `.ts` files:
+
+```json
+{
+  "type": "module"
+}
+```
+
+Then extend the Node preset:
 
 ```jsonc
 {
@@ -44,6 +52,8 @@ A Node library emitted by `tsc` directly (no bundler):
   "include": ["src"]
 }
 ```
+
+Alternatively, use `.mts` source files without a package-level module type. Use `.cts` only for intentionally CommonJS source; the preset itself remains ESM-first.
 
 A React project:
 

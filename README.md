@@ -8,7 +8,7 @@ A pnpm monorepo of shared ESLint, Stylelint, commitlint, and TypeScript configs 
 
 | Package | What it is |
 |---|---|
-| [`@coldsmirk/eslint-config`](packages/eslint-config) | Sealed ESLint **flat** config for pure-TypeScript and React projects. `defineEslintConfig({ type, react, ignores })`. |
+| [`@coldsmirk/eslint-config`](packages/eslint-config) | Sealed ESLint **flat** config for pure-TypeScript and React 19+ projects. `defineEslintConfig({ type, react, ignores })`. |
 | [`@coldsmirk/stylelint-config`](packages/stylelint-config) | CSS / SCSS config — standard + `@stylistic` + recess property ordering; Tailwind v4 via the `tailwind` axis. `defineStylelintConfig({ scss, tailwind })`. |
 | [`@coldsmirk/commitlint-config`](packages/commitlint-config) | Conventional Commits, enforced single-line (no body, no footer). `defineCommitlintConfig()`. |
 | [`@coldsmirk/tsconfig`](packages/tsconfig) | Strict, ESM-first tsconfig presets: `/base` (bundler), `/node` (nodenext), `/react` (base + JSX + DOM). |

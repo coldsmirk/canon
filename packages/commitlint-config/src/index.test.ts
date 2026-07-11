@@ -38,6 +38,14 @@ describe("defineCommitlintConfig", () => {
     expect(result.valid).toBe(true);
   });
 
+  it("keeps Conventional Commits mandatory for every non-workflow message", async () => {
+    for (const message of ["feature: add the thing", "not a conventional commit", "feat(scope) missing colon"]) {
+      const result = await lintMessage(message);
+
+      expect(result.valid, message).toBe(false);
+    }
+  });
+
   it("rejects a body and a footer (single-line contract)", async () => {
     const withBody = await lintMessage("fix: broken thing\n\nlong explanation that belongs in the PR");
     const withFooter = await lintMessage("fix: broken thing\n\nBREAKING CHANGE: everything");
@@ -59,11 +67,18 @@ describe("defineCommitlintConfig", () => {
 
   it("still exempts the shapes git itself writes (merges, autosquash markers)", async () => {
     for (const message of [
+      "Merge branch 'feature/x'",
       "Merge branch 'feature/x' into main",
+      "Merge branch 'main' of github.com:coldsmirk/canon",
       "Merge branches 'topic-one' and 'topic-two'",
+      "Merge tag 'v0.5.2' into main",
+      "Merge remote-tracking branch 'origin/main' into feature/x",
+      "Merge commit '8d2b20e'",
       "Merge commit '447ccb8206d149dc72ffd2df1394b45966470134'",
+      `Merge commit '${"a".repeat(64)}'`,
       "Merge commit '5703a449b7e60e6235380d824c4b67003ce0f874'; commit '5ddd4df303fc724f5416680f11943b77ff8d0d3f'",
       "Merge pull request #42 from coldsmirk/feature-x",
+      "amend! feat(scope): add the thing",
       "fixup! feat(scope): add the thing",
       "squash! feat(scope): add the thing"
     ]) {
@@ -80,12 +95,28 @@ describe("defineCommitlintConfig", () => {
     expect(smuggled.errors.map(e => e.name)).toContain("body-empty");
   });
 
-  it("does not exempt arbitrary Merge subjects or commit-shaped text without a real object ID", async () => {
-    for (const message of ["Merge unrelated work", "Merge commit 'not-a-hash'"]) {
+  it("does not exempt lookalike workflow prefixes or commit-shaped text without a real object ID", async () => {
+    for (const message of [
+      "Merge unrelated work",
+      "Merge branch nonsense",
+      "Merge pull request nonsense",
+      "Automatic merge bypass",
+      "Auto-merged topic into main",
+      "fixup!not-an-autosquash-subject",
+      "Merge commit 'abc'",
+      "Merge commit 'not-a-hash'"
+    ]) {
       const result = await lintMessage(message);
 
       expect(result.valid, message).toBe(false);
     }
+  });
+
+  it("does not let a workflow-looking body bypass the single-line contract", async () => {
+    const result = await lintMessage("Merge branch nonsense\n\nbody");
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.map(e => e.name)).toContain("body-empty");
   });
 
   it("still exempts a real merge commit that carries a body (conflict list)", async () => {

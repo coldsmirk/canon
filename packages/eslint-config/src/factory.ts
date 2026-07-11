@@ -55,9 +55,9 @@ export function defineEslintConfig(
   } = options;
 
   const layers: Linter.Config[][] = [
-    // strict:false — a consumer without a root .gitignore (new project / monorepo sub-package) must
-    // not crash the whole lint run; it degrades to no ignores.
-    [{ ...gitignore({ root: true, strict: false }), name: "coldsmirk/gitignore" }],
+    // strict:false — a consumer without any .gitignore (for example, a new project) must not crash
+    // the whole lint run; it degrades to no ignores.
+    [{ ...gitignore({ strict: false }), name: "coldsmirk/gitignore" }],
     ignores(userIgnores),
     // `typescript()` carries the eslint+tslint recommended baseline; `javascript()` (opinionated
     // core-rule overrides) MUST come after it so its re-enabled rules win over tslint's turn-offs.

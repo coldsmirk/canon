@@ -7,7 +7,7 @@ export interface EslintConfigOptions {
    */
   type?: "app" | "lib";
   /**
-   * Enable React support: `@eslint-react` (recommended-typescript, including its native
+   * Enable React 19+ support: `@eslint-react` (recommended-typescript, including its native
    * rules-of-hooks / exhaustive-deps), react-dom / react-web-api / react-naming-convention, the
    * JSX restrictions, and the DOM test layer (testing-library on test files). All plugins are
    * bundled — no extra install.

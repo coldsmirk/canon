@@ -1,6 +1,6 @@
 # @coldsmirk/eslint-config
 
-Opinionated, composable ESLint **flat config** for the only two project shapes worth supporting: a pure-TypeScript or a React project. More opinionated than `@antfu/eslint-config`, with far fewer knobs — the two axes are `type` (`app` vs `lib`) and `react`.
+Opinionated, composable ESLint **flat config** for the only two project shapes worth supporting: a pure-TypeScript or a React 19+ project. More opinionated than `@antfu/eslint-config`, with far fewer knobs — the two axes are `type` (`app` vs `lib`) and `react`.
 
 Built on the antfu-family toolchain: `typescript-eslint`, `@stylistic`, `eslint-plugin-unicorn`, `eslint-plugin-perfectionist`, `eslint-plugin-import-lite`, `eslint-plugin-antfu`, `eslint-plugin-jsdoc`, `eslint-plugin-regexp`, `@eslint-community/eslint-comments`, `@vitest/eslint-plugin` (test files), `eslint-plugin-package-json` (package.json) + `eslint-plugin-jsonc` (tsconfig), and `@eslint-react/*` (including its native `rules-of-hooks` / `exhaustive-deps` ports) when React is on.
 
@@ -14,7 +14,7 @@ pnpm add -D eslint jiti typescript@6 @coldsmirk/eslint-config
 
 `typescript@6` pins the JS-compiler line — `typescript@latest` resolves to the native 7, which is outside the peer range and cannot be loaded by `typescript-eslint`. `jiti` is what ESLint uses to load a TypeScript config file; drop it if you write `eslint.config.js`/`.mjs` instead.
 
-Peers: ESLint **>= 10.4** (eslint-plugin-unicorn v70's floor) and TypeScript **>= 5.0 < 6.1** (the intersection of `typescript-eslint`'s supported JS-compiler line and `@vitest/eslint-plugin`'s floor — the native TypeScript 7 exposes no JS parser API, so linting runs on the 6.x line even if your build compiles with 7). Node: **^22.22.2 || >= 24.15** (the floor of the bundled plugins). The React and test plugins are **bundled** — a React project just sets `react: true`; no extra installs.
+Peers: ESLint **>= 10.4** (eslint-plugin-unicorn v70's floor) and TypeScript **>= 5.0 < 6.1** (the intersection of `typescript-eslint`'s supported JS-compiler line and `@vitest/eslint-plugin`'s floor — the native TypeScript 7 exposes no JS parser API, so linting runs on the 6.x line even if your build compiles with 7). Node: **^22.22.2 || >= 24.15** (the floor of the bundled plugins). The React and test plugins are **bundled** — a React 19+ project just sets `react: true`; no extra installs.
 
 > `eslint-plugin-jest-dom` is deliberately not bundled: its latest release only peers ESLint ^6–^9, which would fail every consumer's install against ESLint 10 — and its rules call the `context.getSourceCode()` API that ESLint 10 removed, so even a force-installed copy crashes the lint run unless the plugin is wrapped with `@eslint/compat`'s `fixupPluginRules`. It returns the day upstream ships an ESLint-10-compatible release.
 
@@ -28,7 +28,7 @@ import { defineEslintConfig } from "@coldsmirk/eslint-config";
 // Pure-TS library / Node project
 export default defineEslintConfig();
 
-// React app
+// React 19+ app
 export default defineEslintConfig({ react: true });
 ```
 
@@ -39,7 +39,7 @@ The factory returns a plain `Linter.Config[]` — `export default` it directly. 
 ```ts
 defineEslintConfig({
   type: "app",   // "app" (lenient) | "lib" (strict, publishable package.json). Default: "app"
-  react: false,  // React rules + hooks + JSX + the DOM test layer (all plugins bundled). Default: false
+  react: false,  // React 19+ rules + hooks + JSX + the DOM test layer (all plugins bundled). Default: false
   ignores: []    // extra ignore globs for files not in .gitignore. Default: []
 });
 ```
@@ -99,7 +99,7 @@ Flat config is last-wins, so a trailing block *can* also relax a canon rule for 
 - **Tests**: Vitest hygiene on `*.test.{ts,tsx}` — `no-focused-tests` (an `it.only` reaching CI silently skips the suite), consistent `it`, autofixable matcher idioms (`toHaveLength`, `toBe`, …). `.skip` stays legal.
 - **CommonJS by extension**: `.cjs`/`.cts` files are exempt from the ESM-preference rules (`no-require-imports`, `unicorn/prefer-module`, `unicorn/prefer-top-level-await`); node + browser globals are supplied so plain-JS config files don't trip `no-undef`.
 - **package.json / tsconfig**: keys sorted; package.json validated (and, for `type: "lib"`, held to publishable requirements).
-- **React** (when enabled): named imports only (no `React.*`), no class components, no `forwardRef`/`createRef`/`Context.Provider`, JSX confined to `.tsx`, leak-free Web APIs, `rules-of-hooks` + `exhaustive-deps` (via `@eslint-react`'s native ports — exactly one report per finding), and canon's own autofixable JSX shorthands (`disabled` over `disabled={true}`, `<>` over a propless `<Fragment>` — only when `Fragment` provably resolves to React's, and never at the cost of a comment).
+- **React 19+** (when enabled): named imports only (no `React.*`), no class components, no `forwardRef`/`createRef`/`Context.Provider`, JSX confined to `.tsx`, leak-free Web APIs, `rules-of-hooks` + `exhaustive-deps` (via `@eslint-react`'s native ports — exactly one report per finding), and canon's own autofixable JSX shorthands (`disabled` over `disabled={true}`, `<>` over a propless `<Fragment>` — only when `Fragment` provably resolves to React's, and never at the cost of a comment).
 
 ## License
 

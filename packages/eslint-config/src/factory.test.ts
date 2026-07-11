@@ -89,6 +89,12 @@ describe("defineEslintConfig factory", () => {
       expect(config.rules?.["@eslint-react/rules-of-hooks"]?.[0]).toBe(2);
     });
 
+    it("pins @eslint-react to the minimum supported React 19 semantics", async () => {
+      const config = await resolveConfig(defineEslintConfig({ react: true }), "example.tsx");
+
+      expect(config.settings?.["react-x"]).toMatchObject({ version: "19.0.0" });
+    });
+
     it("uses @eslint-react's native hook rules — exactly one source, no standalone react-hooks twin", async () => {
       const config = await resolveConfig(defineEslintConfig({ react: true }), "example.tsx");
 
@@ -284,6 +290,19 @@ describe("defineEslintConfig factory", () => {
   describe("gitignore", () => {
     it("is always included", () => {
       expect(defineEslintConfig().some(c => c.name === "coldsmirk/gitignore")).toBe(true);
+    });
+
+    it("finds the repository .gitignore from a nested workspace cwd", () => {
+      const cwd = vi.spyOn(process, "cwd").mockReturnValue(import.meta.dirname);
+
+      try {
+        const globs = defineEslintConfig().find(c => c.name === "coldsmirk/gitignore")?.ignores;
+
+        expect(globs).toContain("**/node_modules");
+        expect(globs).toContain("**/dist");
+      } finally {
+        cwd.mockRestore();
+      }
     });
   });
 

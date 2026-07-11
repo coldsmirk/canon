@@ -169,6 +169,11 @@ export function react(): Linter.Config[] {
         "react-naming-convention": reactNamingConvention,
         "react-web-api": reactWebApi
       },
+      // canon's React axis targets React 19+. Pin the minimum supported semantics instead of using
+      // upstream's cwd-based detection, which is unreliable when React lives in a leaf workspace.
+      settings: {
+        "react-x": { version: "19.0.0" }
+      },
       rules: {
         ...reactRules,
         ...hooksRules,

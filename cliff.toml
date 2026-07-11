@@ -36,6 +36,7 @@ commit_parsers = [
   { message = "^ci", group = "<!-- 06 -->🤖 Continuous Integration" },
   { message = "^test", group = "<!-- 07 -->🧪 Testing" },
   { message = "^style", group = "<!-- 08 -->🎨 Styling" },
+  { message = "^chore\\(release\\):", skip = true },
   { message = "^chore", group = "<!-- 09 -->🧹 Chores" },
   { message = ".*", group = "<!-- 10 -->🔧 Other" },
 ]

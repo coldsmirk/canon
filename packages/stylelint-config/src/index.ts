@@ -123,6 +123,7 @@ const SCSS_IGNORED_AT_RULES = ["extend", "include"];
 // `@tailwind` directive is deliberately NOT here — in a v4 project it is dead code and should be
 // flagged, exactly what at-rule-no-unknown will do.
 const TAILWIND_AT_RULES = ["apply", "config", "custom-variant", "plugin", "reference", "source", "theme", "utility", "variant"];
+const TAILWIND_NESTING_AT_RULES = ["custom-variant", "utility", "variant"];
 
 // Tailwind v4 value functions plus the documented v3-compat theme(). screen() is not listed: it
 // only appears in media-query preludes, which function-no-unknown does not inspect.
@@ -153,7 +154,10 @@ function tailwindRules(scss: boolean): Config["rules"] {
     // inside the at-rule — in v4 the at-rule IS the scoping root, so exempt the family. The rule
     // is a core rule in both CSS and SCSS modes (the SCSS layer never swaps it), so this shared
     // entry covers both.
-    "nesting-selector-no-missing-scoping-root": [true, { ignoreAtRules: ["custom-variant", "utility", "variant"] }],
+    "nesting-selector-no-missing-scoping-root": [
+      true,
+      { ignoreAtRules: [...scss ? ["mixin"] : [], ...TAILWIND_NESTING_AT_RULES] }
+    ],
     "custom-property-pattern": [
       TAILWIND_CUSTOM_PROPERTY_PATTERN,
       { message: "Expected custom property name to be kebab-case (a Tailwind @theme wildcard reset like \"--color-*\" is also allowed)" }

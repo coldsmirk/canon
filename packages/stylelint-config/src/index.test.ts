@@ -214,9 +214,9 @@ describe("tailwind option axis (real lint)", () => {
 
   it("composes with scss: true (allowances land on the scss/* twins)", async () => {
     const { results } = await stylelint.lint({
-      // Includes a block-form @utility: nesting-selector-no-missing-scoping-root is a core rule in
-      // SCSS mode too (never swapped), so its Tailwind exemption must hold here as well.
-      code: "@theme inline {\n  --color-canvas: #ffffff;\n}\n\n@utility scrollbar-hidden {\n  &::-webkit-scrollbar {\n    display: none;\n  }\n}\n\n.a {\n  @apply flex;\n}\n",
+      // Includes a Sass mixin and a block-form @utility: nesting-selector-no-missing-scoping-root is
+      // a core rule in SCSS mode too, so the Tailwind override must preserve both exemptions.
+      code: "@mixin interactive {\n  &:hover {\n    color: #ffffff;\n  }\n}\n\n@theme inline {\n  --color-canvas: #ffffff;\n}\n\n@utility scrollbar-hidden {\n  &::-webkit-scrollbar {\n    display: none;\n  }\n}\n\n.a {\n  @apply flex;\n}\n",
       // scss/partial-no-import can only judge imports when it knows the linted file's name.
       codeFilename: "app.scss",
       config: defineStylelintConfig({ scss: true, tailwind: true }),

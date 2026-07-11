@@ -18,19 +18,15 @@ const resolveHere = (id: string): string => fileURLToPath(importMetaResolve(id, 
 // commitlint's full defaultIgnores list is deliberately NOT used: it would also wave through
 // `git revert` bodies and bare-semver subjects, which a human is expected to rewrite as
 // conventional single-line messages (`revert: …`, `chore(release): …`).
+const GIT_HASH = "[0-9a-f]{4,64}";
 const GIT_WORKFLOW_SUBJECTS = [
-  /^Merge pull request /,
-  /^Merge branch /,
-  /^Merge branches /,
-  /^Merge tag /,
-  /^Merge remote-tracking branch/,
-  /^Merge commit '[0-9a-f]{40}(?:[0-9a-f]{24})?'(?:; commit '[0-9a-f]{40}(?:[0-9a-f]{24})?')*$/,
-  /^Merge .+? into .+/,
-  /^Merged .+? (?:in|into) .+/,
-  /^Merged PR .+?: /,
-  /^Automatic merge/,
-  /^Auto-merged .+? into /,
-  /^(?:amend|fixup|squash)!/
+  /^Merge pull request #[1-9]\d* from [^/\s]+\/\S+$/,
+  /^Merge branch '[^'\r\n]+'(?: of \S+)?(?: into [^\r\n]+)?$/,
+  /^Merge branches '[^'\r\n]+' and '[^'\r\n]+'(?: into [^\r\n]+)?$/,
+  /^Merge tag '[^'\r\n]+'(?: into [^\r\n]+)?$/,
+  /^Merge remote-tracking branch '[^'\r\n]+'(?: into [^\r\n]+)?$/,
+  new RegExp(`^Merge commit '${GIT_HASH}'(?:; commit '${GIT_HASH}')*$`),
+  /^(?:amend|fixup|squash)! .+$/
 ];
 
 // ONLY the first line is examined. A multiline-anchored regex (commitlint's own defaults use /m)
