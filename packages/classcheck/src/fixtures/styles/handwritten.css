@@ -1,0 +1,4 @@
+/* Prose about .not-a-class must not vouch for it. */
+.readout {
+  font-variant-numeric: tabular-nums;
+}

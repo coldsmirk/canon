@@ -1,0 +1,7 @@
+@tailwind utilities;
+
+@screen lg {
+  .legacy-screen {
+    color: rgb(255 0 0);
+  }
+}

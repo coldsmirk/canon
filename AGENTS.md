@@ -4,12 +4,13 @@ Single canonical source of agent guidance for this repository. `CLAUDE.md` impor
 
 ## Project Overview
 
-canon is the shared, opinionated frontend toolchain for every `@coldsmirk` repository (abacus, nodeloom, heddle's console, …). A pnpm-workspace monorepo (Node >= 24, one uniform floor for development and every package) publishing four packages to npm under `@coldsmirk/*` (MIT), all on one **shared version** bumped together by `scripts/version.ts`:
+canon is the shared, opinionated frontend toolchain for every `@coldsmirk` repository (abacus, nodeloom, heddle's console, …). A pnpm-workspace monorepo (Node >= 24, one uniform floor for development and every package) publishing five packages to npm under `@coldsmirk/*` (MIT), all on one **shared version** bumped together by `scripts/version.ts`:
 
-- `@coldsmirk/eslint-config` — sealed ESLint flat config for pure-TS and React projects (`defineEslintConfig`)
+- `@coldsmirk/eslint-config` — sealed ESLint flat config for pure-TS and React projects; Tailwind v4 class hygiene via the `tailwind` axis (entry-point path; the bundled `eslint-plugin-tailwindcss` hard-peers on `tailwindcss@^4`, so non-Tailwind consumers with strict peer checking must allowlist that peer) (`defineEslintConfig`)
 - `@coldsmirk/stylelint-config` — Stylelint for CSS/SCSS with @stylistic and recess ordering; Tailwind v4 via the `tailwind` axis (`defineStylelintConfig`)
 - `@coldsmirk/commitlint-config` — Conventional Commits, enforced single-line (no body, no footer)
 - `@coldsmirk/tsconfig` — strict, ESM-first TS configs: `/base` (bundler), `/node` (nodenext), `/react`
+- `@coldsmirk/classcheck` — headless Tailwind v4 class-name gate (`defineClasscheckConfig` + `classcheck` CLI) driving `@tailwindcss/language-server` (pinned exactly): class-typo sweep over TS/TSX + stylesheet diagnostics. Complements the eslint `tailwind` axis — ordering/conflicts live there, never in both. Its `src/fixtures/` are deliberately broken source, excluded from lint and typecheck.
 
 ## Design invariants (do not break)
 

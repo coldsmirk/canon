@@ -2,16 +2,17 @@
 
 > Opinionated, **sealed** frontend toolchain configs, published under [`@coldsmirk/*`](https://www.npmjs.com/org/coldsmirk).
 
-A pnpm monorepo of shared ESLint, Stylelint, commitlint, and TypeScript configs — one coherent toolchain where the rules aren't yours to tweak. You take the curated set or you don't. Every config is exposed as a single `defineXxxConfig()` factory, so wiring is identical everywhere.
+A pnpm monorepo of shared ESLint, Stylelint, commitlint, and TypeScript configs, plus a Tailwind class-name gate — one coherent toolchain where the rules aren't yours to tweak. You take the curated set or you don't. Every config is exposed as a single `defineXxxConfig()` factory, so wiring is identical everywhere.
 
 ## Packages
 
 | Package | What it is |
 |---|---|
-| [`@coldsmirk/eslint-config`](packages/eslint-config) | Sealed ESLint **flat** config for pure-TypeScript and React 19+ projects. `defineEslintConfig({ type, react, ignores })`. |
+| [`@coldsmirk/eslint-config`](packages/eslint-config) | Sealed ESLint **flat** config for pure-TypeScript and React 19+ projects; Tailwind v4 class hygiene via the `tailwind` axis. `defineEslintConfig({ type, react, tailwind, ignores })`. |
 | [`@coldsmirk/stylelint-config`](packages/stylelint-config) | CSS / SCSS config — standard + `@stylistic` + recess property ordering; Tailwind v4 via the `tailwind` axis. `defineStylelintConfig({ scss, tailwind })`. |
 | [`@coldsmirk/commitlint-config`](packages/commitlint-config) | Conventional Commits, enforced single-line (no body, no footer). `defineCommitlintConfig()`. |
 | [`@coldsmirk/tsconfig`](packages/tsconfig) | Strict, ESM-first tsconfig presets: `/base` (bundler), `/node` (nodenext), `/react` (base + JSX + DOM). |
+| [`@coldsmirk/classcheck`](packages/classcheck) | Headless Tailwind v4 class-name gate driving the real Tailwind language server: class-typo sweep + stylesheet diagnostics. `defineClasscheckConfig({ entry, source, allowFrom, allow })` + `classcheck` CLI. |
 
 ## Quick start
 

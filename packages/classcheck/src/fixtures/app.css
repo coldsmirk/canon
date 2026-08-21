@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@utility tap {
+  min-height: 44px;
+}
+
+.entry-defined {
+  color: rgb(255 0 0);
+}

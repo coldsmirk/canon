@@ -1,0 +1,61 @@
+{
+  "name": "@coldsmirk/classcheck",
+  "version": "0.7.0",
+  "description": "Headless Tailwind CSS v4 class-name gate: drives the Tailwind language server to catch class typos and CSS-side mistakes lint plugins cannot see.",
+  "keywords": [
+    "tailwindcss",
+    "tailwind",
+    "language-server",
+    "classcheck",
+    "lint"
+  ],
+  "homepage": "https://github.com/coldsmirk/canon/tree/main/packages/classcheck#readme",
+  "bugs": "https://github.com/coldsmirk/canon/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coldsmirk/canon.git",
+    "directory": "packages/classcheck"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Venus"
+  },
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "classcheck": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "clean": "rimraf dist",
+    "prepack": "tsdown",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@tailwindcss/language-server": "0.16.0"
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.0.0",
+    "typescript": "~6.0.3"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0 <7.0.0"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
