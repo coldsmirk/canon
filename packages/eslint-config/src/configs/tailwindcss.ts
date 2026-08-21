@@ -33,6 +33,12 @@ const tailwindcssRules: Linter.RulesRecord = {
 // project without Tailwind installed is safe. The cost of bundling is the plugin's hard peer on
 // `tailwindcss@^4`, which non-Tailwind consumers must allowlist under strict peers (see README).
 export function tailwindcss(entryPoint: string): Linter.Config[] {
+  // An empty string would silently hand the plugin an unusable cssConfigPath and every lint run
+  // would die inside its worker with an opaque message — fail at config build instead.
+  if (entryPoint === "") {
+    throw new Error("the `tailwind` option must be the path to the project's Tailwind CSS v4 entry stylesheet — an empty string configures nothing");
+  }
+
   return [
     {
       name: "coldsmirk/tailwindcss",

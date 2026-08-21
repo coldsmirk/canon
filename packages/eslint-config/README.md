@@ -77,7 +77,7 @@ peerDependencyRules:
     - tailwindcss
 ```
 
-> The plugin resolves the `tailwindcss` package from the lint **cwd** at lint time. In a monorepo where Tailwind lives only in a leaf workspace, lint from that workspace (or hoist `tailwindcss` to the root) — otherwise the rules fail with `Could not find tailwindcss`.
+> The plugin resolves the `tailwindcss` package from the lint **cwd** at lint time. In a monorepo where Tailwind lives only in a leaf workspace, lint from that workspace (or hoist `tailwindcss` to the root) — otherwise the rules fail with `Could not find tailwindcss`. A **relative** `tailwind` path is resolved per linted file against the nearest directory holding an `eslint.config.*` or `package.json` — identical to the lint cwd in a single-project repo, but each package's own root when a monorepo lints from the top; prefer an absolute path there.
 
 For what ESLint structurally cannot see — class **typos** (`felx` produces no diagnostic anywhere), stylesheet-side mistakes (`@apply`/`@screen` misuse in `.css`), and class lists in module constants or `cva`/`clsx` maps — pair this axis with [`@coldsmirk/classcheck`](https://github.com/coldsmirk/canon/tree/main/packages/classcheck), the toolchain's language-server-driven class-name gate. The two are complements by design: ordering and conflicts are reported here (autofixable), typos and CSS diagnostics there, never in both.
 

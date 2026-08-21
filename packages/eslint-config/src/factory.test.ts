@@ -260,6 +260,10 @@ describe("defineEslintConfig factory", () => {
       expect(config.settings?.tailwindcss).toMatchObject({ cssConfigPath: entryPoint });
     });
 
+    it("rejects an empty entry point at config build instead of dying opaquely in the plugin's worker", () => {
+      expect(() => defineEslintConfig({ tailwind: "" })).toThrow(/entry stylesheet/);
+    });
+
     it("orders and merges real class strings against the compiled theme (real lint run, --fix)", async () => {
       const eslint = new ESLint({
         cwd: import.meta.dirname,
