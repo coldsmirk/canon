@@ -16,6 +16,7 @@ import {
   react,
   regexp,
   stylistic,
+  tailwindcss,
   test,
   tsconfig,
   typescript,
@@ -25,10 +26,11 @@ import {
 } from "./configs";
 
 /**
- * Build the opinionated ESLint flat config. The options object selects features (`type`, `react`) and
- * adds project ignore globs (`ignores`) — that is the entire surface. Rules are deliberately NOT
- * configurable: this is a sealed, take-it-or-leave-it config. The React and test plugins are bundled,
- * so a React project needs no extra installs — just set `react: true`.
+ * Build the opinionated ESLint flat config. The options object selects features (`type`, `react`,
+ * `tailwind`) and adds project ignore globs (`ignores`) — that is the entire surface. Rules are
+ * deliberately NOT configurable: this is a sealed, take-it-or-leave-it config. Every plugin is
+ * bundled, so no axis needs an extra install — a React project just sets `react: true`, and the
+ * Tailwind axis compiles against the `tailwindcss` v4 the project already has.
  *
  * Extra flat configs passed after `options` are appended to the result, so a consumer gets a ready-to-
  * export config without wrapping it in another `defineConfig()` — this is the project-layer extension
@@ -39,6 +41,7 @@ import {
  * export default defineEslintConfig();                  // private TS app (lenient package.json)
  * export default defineEslintConfig({ type: "lib" });   // published TS library (strict package.json)
  * export default defineEslintConfig({ react: true });   // React app
+ * export default defineEslintConfig({ react: true, tailwind: "./src/app.css" }); // + Tailwind v4
  *
  * // React app + project-specific layers, no outer defineConfig() needed:
  * export default defineEslintConfig({ react: true }, ...tanstackConfig, projectLayer);
@@ -51,6 +54,7 @@ export function defineEslintConfig(
   const {
     type = "app",
     react: enableReact = false,
+    tailwind: tailwindEntryPoint,
     ignores: userIgnores = []
   } = options;
 
@@ -84,6 +88,11 @@ export function defineEslintConfig(
   // The test layer (testing-library) is DOM/React-oriented, so it follows `react`.
   if (enableReact) {
     layers.push(react(), test());
+  }
+
+  // Independent of `react`: class strings live in plain .ts (cva / clsx / tv) as much as in .tsx.
+  if (tailwindEntryPoint !== undefined) {
+    layers.push(tailwindcss(tailwindEntryPoint));
   }
 
   // Project configs are appended AFTER canon's layers (flat config is last-wins), so a consumer can add

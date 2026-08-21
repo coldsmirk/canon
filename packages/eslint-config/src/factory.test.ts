@@ -1,5 +1,7 @@
 import type { Linter } from "eslint";
 
+import { join } from "node:path";
+
 import { ESLint } from "eslint";
 
 import { defineEslintConfig } from "./factory";
@@ -212,6 +214,78 @@ describe("defineEslintConfig factory", () => {
       expect(config.rules?.["vitest/no-focused-tests"]?.[0]).toBe(2);
       expect(Object.keys(config.rules ?? {}).some(r => r.startsWith("testing-library/"))).toBe(true);
     });
+  });
+
+  describe("Tailwind (tailwind axis)", () => {
+    // A real Tailwind v4 entry point: the plugin's worker compiles it (resolving the tailwindcss
+    // package from the fixture's directory), so these tests exercise the full pipeline.
+    const entryPoint = join(import.meta.dirname, "fixtures", "tailwind.css");
+
+    it("is off by default — no tailwindcss rules, no settings", async () => {
+      const config = await resolveConfig(defineEslintConfig(), "widget.tsx");
+
+      expect(Object.keys(config.rules ?? {}).some(r => r.startsWith("tailwindcss/"))).toBe(false);
+      expect(config.settings?.tailwindcss).toBeUndefined();
+    });
+
+    it("enables the class-hygiene rules at error on source — plain .ts included (cva/clsx live there)", async () => {
+      const configs = defineEslintConfig({ tailwind: entryPoint });
+
+      for (const file of ["widget.tsx", "variants.ts"]) {
+        const config = await resolveConfig(configs, file);
+
+        for (const rule of [
+          "tailwindcss/classnames-order",
+          "tailwindcss/enforces-negative-arbitrary-values",
+          "tailwindcss/enforces-shorthand",
+          "tailwindcss/important-modifier-suffix",
+          "tailwindcss/no-contradicting-classname",
+          "tailwindcss/no-unnecessary-arbitrary-value"
+        ]) {
+          expect(config.rules?.[rule]?.[0], `${rule} on ${file}`).toBe(2);
+        }
+      }
+    });
+
+    it("keeps the two blunt rules off (arbitrary values are a documented escape hatch; non-Tailwind classes are legitimate)", async () => {
+      const config = await resolveConfig(defineEslintConfig({ tailwind: entryPoint }), "widget.tsx");
+
+      expect(config.rules?.["tailwindcss/no-arbitrary-value"]?.[0]).toBe(0);
+      expect(config.rules?.["tailwindcss/no-custom-classname"]?.[0]).toBe(0);
+    });
+
+    it("passes the entry point through as the plugin's cssConfigPath", async () => {
+      const config = await resolveConfig(defineEslintConfig({ tailwind: entryPoint }), "widget.tsx");
+
+      expect(config.settings?.tailwindcss).toMatchObject({ cssConfigPath: entryPoint });
+    });
+
+    it("orders and merges real class strings against the compiled theme (real lint run, --fix)", async () => {
+      const eslint = new ESLint({
+        cwd: import.meta.dirname,
+        overrideConfigFile: true,
+        overrideConfig: defineEslintConfig({ react: true, tailwind: entryPoint }) as never,
+        fix: true
+      });
+
+      const lintFixed = async (code: string, filePath: string) => {
+        const [result] = await eslint.lintText(code, { filePath });
+
+        return result?.output ?? code;
+      };
+
+      const ordered = await lintFixed("export function Chip() {\n  return <span className=\"p-2 flex\">x</span>;\n}\n", "chip.tsx");
+      const merged = await lintFixed("export function Pad() {\n  return <span className=\"pt-2 pb-2\">x</span>;\n}\n", "pad.tsx");
+
+      expect(ordered).toContain("className=\"flex p-2\"");
+      expect(merged).toContain("className=\"py-2\"");
+    }, 30_000);
+
+    it("lints tailwind-axis source with no fatals (react off — class strings via cva/clsx)", async () => {
+      const configs = defineEslintConfig({ tailwind: entryPoint });
+
+      expect(await lintFatals(configs, "variants.ts", "export const chip = \"flex p-2\";\n")).toEqual([]);
+    }, 30_000);
   });
 
   describe("module-variant extensions (.mts/.cts/.mjs/.cjs)", () => {

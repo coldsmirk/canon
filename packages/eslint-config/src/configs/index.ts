@@ -9,6 +9,7 @@ export * from "./package-json";
 export * from "./react";
 export * from "./regexp";
 export * from "./stylistic";
+export * from "./tailwindcss";
 export * from "./test";
 export * from "./tsconfig";
 export * from "./typescript";

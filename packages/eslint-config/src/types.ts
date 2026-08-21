@@ -17,6 +17,16 @@ export interface EslintConfigOptions {
    */
   react?: boolean;
   /**
+   * Enable Tailwind CSS v4 support by passing the project's Tailwind entry stylesheet (the `.css`
+   * file containing `@import "tailwindcss"`), absolute or relative to the lint cwd. The path is
+   * mandatory because the plugin compiles that real entry point to learn the project's theme and
+   * utilities — there is no reliable default. Adds `eslint-plugin-tailwindcss` class hygiene on
+   * source files: compiler-exact class ordering, shorthand merging, contradiction detection, `!`
+   * suffix placement. The plugin is bundled like every other one; at lint time it compiles against
+   * the project's own `tailwindcss` v4 install, resolved from the lint cwd.
+   */
+  tailwind?: string;
+  /**
    * Extra ignore globs, merged into the default (`**\/dist\/**`). For files that should not be
    * linted but aren't in `.gitignore` (committed generated output, vendored code, etc.). This is
    * file scoping, not rule customization.
