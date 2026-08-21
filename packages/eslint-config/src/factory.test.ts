@@ -526,6 +526,23 @@ describe("defineEslintConfig factory", () => {
       expect(config.rules?.["@eslint-react/static-components"]?.[0]).toBe(0);
     });
 
+    it("keeps unicorn's catch-error-name shadow fallback (`error_`) legal for parameters", async () => {
+      const eslint = new ESLint({
+        cwd: import.meta.dirname,
+        overrideConfigFile: true,
+        overrideConfig: defineEslintConfig() as never
+      });
+      // With an outer `error` in scope, catch-error-name's only accepted name is `error_` —
+      // naming-convention must not veto it.
+      const code = "const error = \"outer\";\n\nexport const failed = Promise.reject(new Error(error)).catch((error_: unknown) => error_);\n";
+      const [result] = await eslint.lintText(code, { filePath: "example.ts" });
+      const deadlocked = (result?.messages ?? []).filter(
+        m => m.ruleId === "@typescript-eslint/naming-convention" || m.ruleId === "unicorn/catch-error-name"
+      );
+
+      expect(deadlocked).toEqual([]);
+    });
+
     it("keeps the documented `_`-prefixed intentionally-unused escape hatch legal for variables", async () => {
       const eslint = new ESLint({
         cwd: import.meta.dirname,

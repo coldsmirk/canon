@@ -41,11 +41,14 @@ const typescriptRules: Linter.RulesRecord = {
     },
     // Variables may lead with `_`: unused-imports/no-unused-vars documents the leading underscore
     // as the intentionally-unused escape hatch (varsIgnorePattern), so naming must not veto it.
+    // They may also trail with `_`: unicorn/catch-error-name demands `error`, and its documented
+    // fallback when an outer `error` shadows (a React component's `error` prop, typically) is
+    // `error_` — naming must not dead-lock against the only name that rule accepts.
     {
       selector: "variable",
       format: ["camelCase", "UPPER_CASE", "PascalCase"],
       leadingUnderscore: "allow",
-      trailingUnderscore: "forbid"
+      trailingUnderscore: "allow"
     },
     {
       selector: "function",
@@ -53,12 +56,14 @@ const typescriptRules: Linter.RulesRecord = {
       leadingUnderscore: "forbid",
       trailingUnderscore: "forbid"
     },
-    // Parameters may lead with `_` (intentionally-unused) and be PascalCase (component refs in HOCs).
+    // Parameters may lead with `_` (intentionally-unused) and be PascalCase (component refs in
+    // HOCs); the trailing `_` is catch-error-name's shadow fallback again (promise rejection
+    // callbacks are catch positions to that rule).
     {
       selector: "parameter",
       format: ["camelCase", "PascalCase"],
       leadingUnderscore: "allow",
-      trailingUnderscore: "forbid"
+      trailingUnderscore: "allow"
     },
     {
       selector: "typeLike",
