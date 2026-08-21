@@ -1,6 +1,6 @@
 {
   "name": "@coldsmirk/classcheck",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Headless Tailwind CSS v4 class-name gate: drives the Tailwind language server to catch class typos and CSS-side mistakes lint plugins cannot see.",
   "keywords": [
     "tailwindcss",
