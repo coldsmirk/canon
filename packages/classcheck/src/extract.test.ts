@@ -72,4 +72,28 @@ describe("extractClassTokens", () => {
   it("ignores strings that no class site reaches", () => {
     expect(tokensOf("const greeting = \"hello world\";\nexport default greeting;", "plain.ts")).toEqual([]);
   });
+
+  it("looks through `satisfies` and angle-bracket assertions like it does `as`", () => {
+    const text = [
+      "const styles = { card: \"flex p-2\" } satisfies Record<string, string>;",
+      "export const a = <div className={styles.card} />;"
+    ].join("\n");
+
+    expect(tokensOf(text)).toEqual(expect.arrayContaining(["flex", "p-2"]));
+  });
+
+  it("harvests tagged templates for the known class functions, bare and in attributes", () => {
+    const text = [
+      "export const bare = tw`flex p-2`;",
+      "export const b = <div className={tw`tap`} />;"
+    ].join("\n");
+
+    expect(tokensOf(text)).toEqual(expect.arrayContaining(["flex", "p-2", "tap"]));
+  });
+
+  it("skips fragments flush against a template interpolation — constructed names, not classes", () => {
+    const text = `export const a = <div className={\`w-[\${x}px] flex\`} />;`;
+
+    expect(tokensOf(text)).toEqual(["flex"]);
+  });
 });

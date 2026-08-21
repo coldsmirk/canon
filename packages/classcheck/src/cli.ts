@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import type { ClasscheckConfig } from "./types";
 
+import { existsSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
@@ -19,21 +20,40 @@ Exit codes: 0 clean, 1 findings, 2 configuration or infrastructure failure.`;
 
 const CONFIG_CANDIDATES = ["classcheck.config.ts", "classcheck.config.mts", "classcheck.config.js", "classcheck.config.mjs"];
 
+// A typo'd flag is a usage error — the documented contract reserves exit 1 for findings, so the
+// parse failure must surface as a clean exit-2 message, not a raw stack trace.
+function parseCliArgs(): { config?: string; help?: boolean } {
+  try {
+    return parseArgs({
+      options: {
+        config: { type: "string" },
+        help: { type: "boolean" }
+      }
+    }).values;
+  } catch (error) {
+    throw new ClasscheckError(`${(error as Error).message} (see --help)`, { cause: error });
+  }
+}
+
 async function loadConfig(cwd: string, explicit: string | undefined): Promise<ClasscheckConfig> {
   const candidates = explicit ? [explicit] : CONFIG_CANDIDATES;
 
   for (const candidate of candidates) {
     const path = resolve(cwd, candidate);
+
+    // Existence is decided up front, so an import failure below is always the config's OWN error
+    // (a broken import inside it, a missing dependency) — masking those as "no config found"
+    // would send the user hunting for the wrong problem.
+    if (!existsSync(path)) {
+      continue;
+    }
+
     let module: { default?: unknown };
 
     try {
       module = (await import(pathToFileURL(path).href)) as { default?: unknown };
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ERR_MODULE_NOT_FOUND" && !explicit) {
-        continue;
-      }
-
-      throw new ClasscheckError(`could not load ${candidate}: ${(error as Error).message}`);
+      throw new ClasscheckError(`could not load ${candidate}: ${(error as Error).message}`, { cause: error });
     }
 
     const config = module.default;
@@ -45,22 +65,19 @@ async function loadConfig(cwd: string, explicit: string | undefined): Promise<Cl
     return config as ClasscheckConfig;
   }
 
-  throw new ClasscheckError(`no ${CONFIG_CANDIDATES[0]} found in ${cwd} (see --help)`);
-}
-
-const { values } = parseArgs({
-  options: {
-    config: { type: "string" },
-    help: { type: "boolean" }
-  }
-});
-
-if (values.help) {
-  console.log(HELP);
-  process.exit(0);
+  throw new ClasscheckError(
+    explicit ? `config file not found: ${explicit}` : `no ${CONFIG_CANDIDATES[0]} found in ${cwd} (see --help)`
+  );
 }
 
 try {
+  const values = parseCliArgs();
+
+  if (values.help) {
+    console.log(HELP);
+    process.exit(0);
+  }
+
   const cwd = process.cwd();
   const config = await loadConfig(cwd, values.config);
   const {

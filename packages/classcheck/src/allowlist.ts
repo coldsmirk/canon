@@ -4,7 +4,11 @@
  * `.5` out of `p-1.5` and `.foo` out of `url(x).foo`-style fragments.
  */
 export function classSelectorsIn(css: string): string[] {
-  const stripped = css.replaceAll(/\/\*[\s\S]*?\*\//g, "");
+  const stripped = css
+    .replaceAll(/\/\*[\s\S]*?\*\//g, "")
+    // String values (`content: ".ghost"`, grid-template-areas, url("…")) can carry `.word`
+    // sequences that are prose, not selectors — a string must not vouch for a class either.
+    .replaceAll(/"(?:[^"\\]|\\[\s\S])*"|'(?:[^'\\]|\\[\s\S])*'/g, "");
 
   return stripped.matchAll(/(?<![\w)])\.(?<name>-?[_a-z][\w-]*)/gi)
     .map(match => match.groups?.name ?? "")

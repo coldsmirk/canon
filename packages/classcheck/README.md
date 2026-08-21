@@ -60,12 +60,13 @@ defineClasscheckConfig({
 
 **Pass 2 — the typo sweep.** Every class token extracted from `.ts`/`.tsx` is written into a synthetic probe document (one class per line, never touching disk) and hovered. Silence from the server + absence from the allowlist = unknown class, reported at every site that writes it. Whatever the server *does* say about a token (canonical spelling, blocklist) is carried back to those sites too.
 
-Deliberately **not** reported: class-list ordering and intra-list conflicts in markup. Those are `@coldsmirk/eslint-config`'s `tailwind` axis (autofixable there), and one finding must have one source.
+Deliberately **not** reported: class-list ordering and intra-list conflicts in markup. Those are `@coldsmirk/eslint-config`'s `tailwind` axis (autofixable there), and one finding must have one source. The same ownership rule gives **arbitrary-value canonicalization** (`m-[8px]` → `m-2`) to ESLint's `no-unnecessary-arbitrary-value`: classcheck carries the server's canonical-spelling advice only for non-arbitrary tokens (deprecated names like `break-words` → `wrap-break-word`).
 
 ## Caveats
 
-- The server resolves the `tailwindcss` package from the lint **cwd**. In a monorepo where Tailwind lives in a leaf workspace, run classcheck from that workspace.
+- The server resolves the `tailwindcss` package from the lint **cwd** — and silently falls back to its *bundled* copy (a different compiler version) when none is found, so classcheck refuses to run unless `tailwindcss` v4 is resolvable from the cwd. In a monorepo where Tailwind lives in a leaf workspace, run classcheck from that workspace.
 - The extraction walk is per-file and syntactic: a class constant imported from another module is checked where it is *defined* (its `cva`/`clsx`/attribute site), not where it is used.
+- Tokens flush against a template interpolation (`` `w-[${x}px]` ``) are fragments of *constructed* class names. Tailwind cannot compile constructed names either, so the fragments are skipped rather than misreported as typos — whitespace-separated complete tokens in the same template are still checked.
 - The language server is pinned exactly because the gate depends on headless behaviour (`testMode`, configuration pull, single-flight validation) that can shift between versions; bumps happen here, tested, not in your lockfile.
 
 ## License

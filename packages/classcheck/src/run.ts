@@ -1,6 +1,6 @@
 import type { ClasscheckConfig, ClasscheckFinding, ClasscheckResult } from "./types";
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative, resolve } from "node:path";
 
@@ -72,6 +72,9 @@ interface ResolvedConfig {
 export async function runClasscheck(config: ClasscheckConfig, options: RunOptions = {}): Promise<ClasscheckResult> {
   const cwd = resolve(options.cwd ?? process.cwd());
   const resolved = resolveConfig(config, cwd);
+
+  requireProjectTailwind(cwd);
+
   const sourceFiles = resolved.sourceDirs.flatMap(dir => walk(dir)).toSorted();
   const styleFiles = [...new Set([resolved.entry, ...resolved.allowFrom, ...sourceFiles.filter(file => file.endsWith(".css"))])].toSorted();
   const scriptFiles = sourceFiles.filter(file => /\.tsx?$/.test(file));
@@ -140,10 +143,14 @@ export async function runClasscheck(config: ClasscheckConfig, options: RunOption
 
         // What the server said about the token itself (canonical spelling, blocklist, …), carried
         // back to every place the token is written — including the ones it cannot see for itself.
+        // EXCEPT arbitrary-value canonicalization (`m-[8px]` → `m-2`): that finding is owned by
+        // the eslint tailwind axis, which reports it autofixably — carrying the server's twin here
+        // would report the same finding from two sources. Canonical-spelling advice for
+        // NON-arbitrary tokens (deprecated names) has no eslint source and stays.
         const about = said.get(token);
 
-        if (about) {
-          report(file, line + 1, about);
+        if (about && !(about.code === "suggestCanonicalClasses" && token.includes("["))) {
+          report(file, line + 1, `${about.text} [${about.code}]`);
         }
       }
     }
@@ -208,6 +215,33 @@ function requireFile(file: string, axis: string): void {
   }
 }
 
+// The server silently falls back to its BUNDLED tailwindcss when the project's copy is not
+// resolvable from the cwd — every answer then comes from the wrong compiler version with no
+// indication anywhere. Refuse to run instead. Resolved by hand (node_modules walked up the tree,
+// Node's own lookup order) rather than via createRequire: module runners like Vitest shim
+// require-resolution, and this check must observe the real on-disk installation the server sees.
+function requireProjectTailwind(cwd: string): void {
+  for (let dir = cwd; ; dir = dirname(dir)) {
+    const manifest = join(dir, "node_modules", "tailwindcss", "package.json");
+
+    if (statOf(manifest)?.isFile()) {
+      const { version } = JSON.parse(readFileSync(manifest, "utf-8")) as { version?: string };
+
+      if (typeof version !== "string" || !version.startsWith("4.")) {
+        throw new ClasscheckError(`tailwindcss v4 is required, found ${version ?? "an unknown version"} at ${manifest}`);
+      }
+
+      return;
+    }
+
+    if (dirname(dir) === dir) {
+      throw new ClasscheckError(
+        `tailwindcss is not resolvable from ${cwd} — install it there (the language server would otherwise silently answer from its bundled copy)`
+      );
+    }
+  }
+}
+
 function statOf(path: string) {
   try {
     return statSync(path);
@@ -218,16 +252,27 @@ function statOf(path: string) {
 
 /**
  * Every checkable file under `dir`, recursively, skipping dependency and hidden directories.
+ * Symlinks are followed (a dirent answers `isDirectory()` with false for them, so they are
+ * stat'ed through); the realpath set breaks symlink cycles.
  */
-function walk(dir: string): string[] {
+function walk(dir: string, visited = new Set<string>()): string[] {
+  const real = realpathSync(dir);
+
+  if (visited.has(real)) {
+    return [];
+  }
+
+  visited.add(real);
+
   return readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
     const full = join(dir, entry.name);
+    const stats = entry.isSymbolicLink() ? statOf(full) : entry;
 
-    if (entry.isDirectory()) {
-      return entry.name === "node_modules" || entry.name.startsWith(".") ? [] : walk(full);
+    if (stats?.isDirectory()) {
+      return entry.name === "node_modules" || entry.name.startsWith(".") ? [] : walk(full, visited);
     }
 
-    return /\.(?:tsx?|css)$/.test(entry.name) ? [full] : [];
+    return stats?.isFile() && /\.(?:tsx?|css)$/.test(entry.name) ? [full] : [];
   });
 }
 
@@ -318,7 +363,7 @@ function probeText(tokens: string[]): string {
   return `${tokens.map(token => `${PROBE_PREFIX}${token}" />`).join("\n")}\n`;
 }
 
-async function probe(client: LspClient, probeFile: string, tokens: string[]): Promise<{ hovers: Map<string, string | null>; said: Map<string, string> }> {
+async function probe(client: LspClient, probeFile: string, tokens: string[]): Promise<{ hovers: Map<string, string | null>; said: Map<string, { code: string; text: string }> }> {
   client.clearDiagnostics(probeFile);
   client.openDocument(probeFile, "typescriptreact", probeText(tokens));
 
@@ -328,17 +373,18 @@ async function probe(client: LspClient, probeFile: string, tokens: string[]): Pr
     hovers.set(token, await client.hover(probeFile, line, PROBE_PREFIX.length));
   }
 
-  const said = new Map<string, string>();
+  const said = new Map<string, { code: string; text: string }>();
 
   // One class per line, so nothing in the probe can conflict with anything: what it reports is
-  // what the class itself is, wherever it is written.
+  // what the class itself is, wherever it is written. The code is kept apart from the message so
+  // the caller can apply per-rule ownership decisions.
   const diagnostics = await client.waitForDiagnostics(probeFile, VALIDATE_TIMEOUT_MS);
 
   for (const diagnostic of diagnostics) {
     const token = tokens[diagnostic.range.start.line];
 
     if (token !== undefined) {
-      said.set(token, `${diagnostic.message} [${diagnostic.code}]`);
+      said.set(token, { code: String(diagnostic.code), text: diagnostic.message });
     }
   }
 

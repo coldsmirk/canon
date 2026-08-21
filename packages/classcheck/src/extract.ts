@@ -61,17 +61,24 @@ export function extractClassTokens(file: string, text: string): ClassToken[] {
 
   collect(source);
 
-  const strings: Array<{ text: string; at: number }> = [];
+  const strings: Array<{ text: string; at: number; openStart: boolean; openEnd: boolean }> = [];
   const seen = new Set<ts.Node>();
 
   // The raw source between the delimiters, not the cooked `.text`: one escape and every token
   // offset after it would point at the wrong column. The tail is two characters when a template
-  // part closes on `${`, one otherwise.
-  const pushLiteral = (literal: ts.LiteralLikeNode): void => {
+  // part closes on `${`, one otherwise — which is also what marks the fragment as open-ended
+  // (`openStart` is set by the caller for parts that begin right after an interpolation).
+  const pushLiteral = (literal: ts.LiteralLikeNode, openStart = false): void => {
     const from = literal.getStart(source) + 1;
     const end = literal.getEnd();
+    const openEnd = text.endsWith("${", end);
 
-    strings.push({ text: text.slice(from, end - (text.endsWith("${", end) ? 2 : 1)), at: from });
+    strings.push({
+      text: text.slice(from, end - (openEnd ? 2 : 1)),
+      at: from,
+      openStart,
+      openEnd
+    });
   };
 
   const harvest = (node: ts.Node | undefined, depth: number, parseKeys: boolean): void => {
@@ -96,8 +103,14 @@ export function extractClassTokens(file: string, text: string): ClassToken[] {
 
       for (const span of node.templateSpans) {
         harvest(span.expression, depth + 1, parseKeys);
-        pushLiteral(span.literal);
+        pushLiteral(span.literal, true);
       }
+
+      return;
+    }
+
+    if (ts.isTaggedTemplateExpression(node)) {
+      harvest(node.template, depth + 1, parseKeys);
 
       return;
     }
@@ -130,7 +143,12 @@ export function extractClassTokens(file: string, text: string): ClassToken[] {
         if (parseKeys && ts.isStringLiteral(key)) {
           pushLiteral(key);
         } else if (parseKeys && ts.isIdentifier(key)) {
-          strings.push({ text: key.text, at: key.getStart(source) });
+          strings.push({
+            text: key.text,
+            at: key.getStart(source),
+            openStart: false,
+            openEnd: false
+          });
         }
 
         harvest(property.initializer, depth + 1, parseKeys);
@@ -164,6 +182,8 @@ export function extractClassTokens(file: string, text: string): ClassToken[] {
       ts.isJsxExpression(node)
       || ts.isParenthesizedExpression(node)
       || ts.isAsExpression(node)
+      || ts.isSatisfiesExpression(node)
+      || ts.isTypeAssertionExpression(node)
       || ts.isNonNullExpression(node)
       || ts.isPropertyAccessExpression(node)
       || ts.isElementAccessExpression(node)
@@ -189,18 +209,43 @@ export function extractClassTokens(file: string, text: string): ClassToken[] {
       }
     }
 
+    // The tagged form of the same functions (`` tw`flex p-2` ``) — the dominant `tw` idiom.
+    if (ts.isTaggedTemplateExpression(node) && ts.isIdentifier(node.tag) && CLASS_FUNCTIONS.has(node.tag.text)) {
+      harvest(node.template, 0, false);
+    }
+
     ts.forEachChild(node, visit);
   };
 
   visit(source);
 
-  return strings.flatMap(({ text: literal, at }) => literal.matchAll(/\S+/g).map(match => {
-    return {
-      token: match[0],
-      file,
-      ...source.getLineAndCharacterOfPosition(at + match.index)
-    };
-  }).toArray());
+  return strings.flatMap(({
+    text: literal,
+    at,
+    openStart,
+    openEnd
+  }) => {
+    const matches = literal.matchAll(/\S+/g).toArray();
+
+    return matches
+      // A token flush against an interpolation boundary is a FRAGMENT of a constructed class name
+      // (`w-[${x}px]` → `w-[` and `px]`), not a class. Tailwind cannot compile constructed names
+      // either, so there is nothing true to say about the fragment — skip it rather than
+      // misreport it as a typo. Whitespace-separated complete tokens in the same template stay.
+      .filter((match, index) => {
+        const flushStart = openStart && index === 0 && match.index === 0;
+        const flushEnd = openEnd && index === matches.length - 1 && match.index + match[0].length === literal.length;
+
+        return !flushStart && !flushEnd;
+      })
+      .map(match => {
+        return {
+          token: match[0],
+          file,
+          ...source.getLineAndCharacterOfPosition(at + match.index)
+        };
+      });
+  });
 }
 
 // For a call to one of the known class functions: whether its object keys are classes.

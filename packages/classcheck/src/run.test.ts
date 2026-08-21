@@ -1,3 +1,5 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 
 import { ClasscheckError, runClasscheck } from "./run";
@@ -17,6 +19,22 @@ describe("runClasscheck", () => {
         allowFrom: ["styles/missing.css"]
       }, { cwd: FIXTURES })
     ).rejects.toThrow(ClasscheckError);
+  });
+
+  it("refuses to run where tailwindcss is not resolvable — the server would silently answer from its bundled copy", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "classcheck-"));
+
+    try {
+      mkdirSync(join(dir, "src"));
+      writeFileSync(join(dir, "app.css"), "@import \"tailwindcss\";\n");
+
+      await expect(runClasscheck({ entry: "app.css" }, { cwd: dir })).rejects.toThrow(/tailwindcss is not resolvable/);
+    } finally {
+      rmSync(dir, {
+        recursive: true,
+        force: true
+      });
+    }
   });
 
   // One server run over the whole fixture project; every behavioural assertion reads from it.
@@ -56,6 +74,14 @@ describe("runClasscheck", () => {
 
     it("does not treat cva defaultVariants values as classes", () => {
       expect(messages.filter(m => m.includes("`hot`"))).toEqual([]);
+    });
+
+    it("cedes arbitrary-value canonicalization to the eslint tailwind axis (no m-[8px] finding here)", () => {
+      expect(messages.filter(m => m.includes("m-[8px]"))).toEqual([]);
+    });
+
+    it("still carries canonical-spelling advice for non-arbitrary tokens (deprecated names)", () => {
+      expect(messages.some(m => m.includes("break-words") && m.includes("suggestCanonicalClasses"))).toBe(true);
     });
 
     it("surfaces the server's own stylesheet diagnostics (v3 leftovers in legacy.css)", () => {

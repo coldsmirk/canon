@@ -17,10 +17,16 @@ interface LspInbound {
   method?: string;
   params?: {
     uri?: string;
+    version?: number;
     diagnostics?: LspDiagnostic[];
     items?: Array<{ section?: string }>;
   };
   result?: unknown;
+}
+
+interface PublishedDiagnostics {
+  version?: number;
+  diagnostics: LspDiagnostic[];
 }
 
 interface PendingRequest {
@@ -60,7 +66,7 @@ export class LspClient {
   private readonly settings: Record<string, unknown>;
   private readonly rootDir: string;
   private readonly pending = new Map<number, PendingRequest>();
-  private readonly diagnostics = new Map<string, LspDiagnostic[]>();
+  private readonly diagnostics = new Map<string, PublishedDiagnostics>();
   private readonly openVersions = new Map<string, number>();
   private buffer = Buffer.alloc(0);
   private nextId = 0;
@@ -141,7 +147,10 @@ export class LspClient {
   private dispatch(message: LspInbound): void {
     if (message.method === "textDocument/publishDiagnostics") {
       if (message.params?.uri) {
-        this.diagnostics.set(message.params.uri, message.params.diagnostics ?? []);
+        this.diagnostics.set(message.params.uri, {
+          version: message.params.version,
+          diagnostics: message.params.diagnostics ?? []
+        });
       }
     } else if (message.method === "workspace/configuration") {
       // v0.16 pulls its settings this way; ignoring the request means the run silently uses
@@ -240,13 +249,22 @@ export class LspClient {
   /**
    * Wait for the server to publish diagnostics for `file` after its latest open/change. Polling —
    * `publishDiagnostics` is a notification with no request to await, so arrival is observed, not
-   * requested.
+   * requested. A publish carrying an older document version is a stale in-flight answer for
+   * content this client has already replaced — keep waiting for the current version. (A publish
+   * without a version cannot be ordered and is accepted as-is.)
    */
   async waitForDiagnostics(file: string, timeoutMs: number): Promise<LspDiagnostic[]> {
     const uri = pathToFileURL(file).href;
+    const wanted = this.openVersions.get(uri) ?? 0;
     const deadline = Date.now() + timeoutMs;
 
-    while (!this.diagnostics.has(uri)) {
+    for (;;) {
+      const published = this.diagnostics.get(uri);
+
+      if (published && (published.version === undefined || published.version >= wanted)) {
+        return published.diagnostics;
+      }
+
       if (this.exitError) {
         throw this.exitError;
       }
@@ -257,8 +275,6 @@ export class LspClient {
 
       await sleep(50);
     }
-
-    return this.diagnostics.get(uri) ?? [];
   }
 
   dispose(): void {

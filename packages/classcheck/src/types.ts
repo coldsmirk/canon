@@ -1,9 +1,10 @@
 export interface ClasscheckConfig {
   /**
    * The project's Tailwind CSS v4 entry stylesheet (the `.css` file containing
-   * `@import "tailwindcss"`), relative to the config file's directory (the lint cwd). The language
-   * server compiles this real entry point, so every check answers with the project's actual theme
-   * and utilities. Class selectors written directly in this file are automatically allowed.
+   * `@import "tailwindcss"`), absolute or relative to the lint cwd — the directory the CLI runs
+   * in, or `RunOptions.cwd`. The language server compiles this real entry point, so every check
+   * answers with the project's actual theme and utilities. Class selectors written directly in
+   * this file are automatically allowed.
    */
   entry: string;
   /**

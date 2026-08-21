@@ -14,6 +14,10 @@ describe("classSelectorsIn", () => {
   it("keeps decimals and function results out (.5 in p-1.5, url(x).frag)", () => {
     expect(classSelectorsIn(".x { width: 1.5rem; background: url(a.png).frag; }")).toEqual(["x"]);
   });
+
+  it("does not let string values vouch for a class (content, grid-template-areas)", () => {
+    expect(classSelectorsIn(".real { content: \".ghost\"; grid-template-areas: \".area .other\"; }")).toEqual(["real"]);
+  });
 });
 
 describe("isMarkerClass", () => {
