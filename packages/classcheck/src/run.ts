@@ -143,13 +143,13 @@ export async function runClasscheck(config: ClasscheckConfig, options: RunOption
 
         // What the server said about the token itself (canonical spelling, blocklist, …), carried
         // back to every place the token is written — including the ones it cannot see for itself.
-        // EXCEPT arbitrary-value canonicalization (`m-[8px]` → `m-2`): that finding is owned by
-        // the eslint tailwind axis, which reports it autofixably — carrying the server's twin here
-        // would report the same finding from two sources. Canonical-spelling advice for
-        // NON-arbitrary tokens (deprecated names) has no eslint source and stays.
+        // classcheck OWNS canonical spelling outright: the eslint axis keeps its partial twin
+        // (`no-unnecessary-arbitrary-value`, exact-twin arbitrary values only) off, so the same
+        // finding never has two sources and the superset (`h-[3px]` → `h-0.75`, `bg-[var(--x)]`
+        // → `bg-(--x)`, deprecated names) is enforced from exactly one place.
         const about = said.get(token);
 
-        if (about && !(about.code === "suggestCanonicalClasses" && token.includes("["))) {
+        if (about) {
           report(file, line + 1, `${about.text} [${about.code}]`);
         }
       }

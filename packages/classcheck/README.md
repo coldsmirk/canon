@@ -60,7 +60,7 @@ defineClasscheckConfig({
 
 **Pass 2 — the typo sweep.** Every class token extracted from `.ts`/`.tsx` is written into a synthetic probe document (one class per line, never touching disk) and hovered. Silence from the server + absence from the allowlist = unknown class, reported at every site that writes it. Whatever the server *does* say about a token (canonical spelling, blocklist) is carried back to those sites too.
 
-Deliberately **not** reported: class-list ordering and intra-list conflicts in markup. Those are `@coldsmirk/eslint-config`'s `tailwind` axis (autofixable there), and one finding must have one source. The same ownership rule gives **arbitrary-value canonicalization** (`m-[8px]` → `m-2`) to ESLint's `no-unnecessary-arbitrary-value`: classcheck carries the server's canonical-spelling advice only for non-arbitrary tokens (deprecated names like `break-words` → `wrap-break-word`).
+Deliberately **not** reported: class-list ordering and intra-list conflicts in markup. Those are `@coldsmirk/eslint-config`'s `tailwind` axis (autofixable there), and one finding must have one source. The same rule runs the other way for **canonical spelling**: classcheck owns `suggestCanonicalClasses` outright — `m-[8px]` → `m-2`, `h-[3px]` → `h-0.75`, `bg-[var(--x)]` → `bg-(--x)`, deprecated names like `break-words` → `wrap-break-word` — and the eslint axis keeps its partial twin (`no-unnecessary-arbitrary-value`, exact-twin values only) off. When the plugin's v4.4 `enforces-canonical-classname` ships the full check with an autofix, ownership flips to ESLint.
 
 ## Caveats
 

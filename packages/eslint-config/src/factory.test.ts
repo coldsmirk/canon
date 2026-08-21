@@ -239,8 +239,7 @@ describe("defineEslintConfig factory", () => {
           "tailwindcss/enforces-negative-arbitrary-values",
           "tailwindcss/enforces-shorthand",
           "tailwindcss/important-modifier-suffix",
-          "tailwindcss/no-contradicting-classname",
-          "tailwindcss/no-unnecessary-arbitrary-value"
+          "tailwindcss/no-contradicting-classname"
         ]) {
           expect(config.rules?.[rule]?.[0], `${rule} on ${file}`).toBe(2);
         }
@@ -252,6 +251,12 @@ describe("defineEslintConfig factory", () => {
 
       expect(config.rules?.["tailwindcss/no-arbitrary-value"]?.[0]).toBe(0);
       expect(config.rules?.["tailwindcss/no-custom-classname"]?.[0]).toBe(0);
+    });
+
+    it("keeps no-unnecessary-arbitrary-value off — canonical-value advice is owned by @coldsmirk/classcheck (one finding, one source)", async () => {
+      const config = await resolveConfig(defineEslintConfig({ tailwind: entryPoint }), "widget.tsx");
+
+      expect(config.rules?.["tailwindcss/no-unnecessary-arbitrary-value"]?.[0]).toBe(0);
     });
 
     it("passes the entry point through as the plugin's cssConfigPath", async () => {

@@ -24,8 +24,12 @@ const tailwindcssRules: Linter.RulesRecord = {
   // Off: it flags every class the compiler doesn't know, but real projects legitimately mix in
   // CSS-module, third-party, and plain-CSS class names alongside the utilities.
   "tailwindcss/no-custom-classname": "off",
-  // `inset-[1px]` → `inset-px` and friends: an arbitrary value with a native twin, autofixable.
-  "tailwindcss/no-unnecessary-arbitrary-value": "error"
+  // Off — owned by @coldsmirk/classcheck: this rule only catches the exact-twin subset
+  // (`m-[8px]` → `m-2`, not `h-[3px]` → `h-0.75` or `bg-[var(--x)]` → `bg-(--x)`), while
+  // classcheck carries the server's full `suggestCanonicalClasses`, a strict superset — enabling
+  // both would report the same finding from two sources. Flips back here (and classcheck filters)
+  // once the plugin's v4.4 `enforces-canonical-classname` ships the full check with an autofix.
+  "tailwindcss/no-unnecessary-arbitrary-value": "off"
 };
 
 // Bundled like every other plugin, and statically imported like the React ones: the plugin only

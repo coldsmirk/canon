@@ -76,11 +76,11 @@ describe("runClasscheck", () => {
       expect(messages.filter(m => m.includes("`hot`"))).toEqual([]);
     });
 
-    it("cedes arbitrary-value canonicalization to the eslint tailwind axis (no m-[8px] finding here)", () => {
-      expect(messages.filter(m => m.includes("m-[8px]"))).toEqual([]);
+    it("owns canonical-value advice outright: exact-twin arbitrary values are reported here", () => {
+      expect(messages.some(m => m.includes("m-[8px]") && m.includes("suggestCanonicalClasses"))).toBe(true);
     });
 
-    it("still carries canonical-spelling advice for non-arbitrary tokens (deprecated names)", () => {
+    it("carries canonical-spelling advice for deprecated names", () => {
       expect(messages.some(m => m.includes("break-words") && m.includes("suggestCanonicalClasses"))).toBe(true);
     });
 
